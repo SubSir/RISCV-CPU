@@ -10,11 +10,11 @@
 `define SLTU 4'b1001
 
 module ALU #(parameter ROB_WIDTH = 4)
-           (input clk_in,
+            (input clk_in,
              input rst_in,
              input rdy_in,
              input clear,
-             input cal,                // �?要计算为1
+             input cal,                // 要计算为1
              input [31:0] a,
              input [31:0] b,
              input [3:0] alu_op,
@@ -24,8 +24,8 @@ module ALU #(parameter ROB_WIDTH = 4)
     
     always @(posedge clk_in) begin
         if (rst_in | rdy_in & clear | !cal) begin
-            cal_out <= 0'b0;
-            end begin
+            cal_out <= 0;
+            end else begin
             case (alu_op)
                 `ADD: result  <= a + b;
                 `SUB: result  <= a - b;
@@ -37,8 +37,6 @@ module ALU #(parameter ROB_WIDTH = 4)
                 `SRA: result  <= a >>> b[4:0];
                 `SLT: result  <= a < b;
                 `SLTU: result <= $unsigned(a) < $unsigned(b);
-                
-                default: cal_out <= 0;
             endcase
         end
     end
