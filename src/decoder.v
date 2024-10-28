@@ -62,7 +62,7 @@ module Decoder #(parameter ROB_WIDTH = 4)
                  output reg [ROB_WIDTH-1:0]to_lsb_tag,
                  output reg to_rob,
                  );
-    always @(posedge clk_in) begin
+    always @(posedge clk or negedge reset) begin
         if (rst_in | rdy_in & clear | !from_if | !from_rob) begin
             to_rs  <= 0;
             to_lsb <= 0;

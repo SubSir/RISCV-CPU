@@ -22,7 +22,7 @@ module ALU #(parameter ROB_WIDTH = 4)
              output reg [31:0] result,
              );
     
-    always @(posedge clk_in) begin
+    always @(posedge clk or negedge reset) begin
         if (rst_in | rdy_in & clear | !cal) begin
             cal_out <= 0;
             end else begin
