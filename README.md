@@ -1,5 +1,10 @@
 # RISCV-CPU 2024
 
+
+## CPU 草图
+
+![draft](photo/draft.png)
+
 ## 项目说明
 
 在本项目中，你需要使用 Verilog 语言完成一个简单的 RISC-V CPU 电路设计。

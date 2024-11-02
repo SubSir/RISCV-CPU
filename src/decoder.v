@@ -53,6 +53,7 @@ module Decoder #(parameter ROB_WIDTH = 4)
                  output reg [4:0] to_rs_rs1,
                  output reg [4:0] to_rs_rs2,
                  output reg [31:0] to_rs_imm,
+                 output reg [31:0] to_rs_pc,
                  output reg [ROB_WIDTH-1:0] to_rs_tag,
                  output reg to_lsb,
                  output reg [31:0] to_lsb_op,
@@ -89,6 +90,7 @@ module Decoder #(parameter ROB_WIDTH = 4)
             to_rs_rs2  <= rs2;
             to_rs_tag  <= from_rob_tag;
             to_lsb_tag <= from_rob_tag;
+            to_rs_pc   <= pc;
             if (opcode == 7'b0110011 && func3 == 3'b000 && func7 == 7'b0000000) begin
                 // ADD
                 to_rs    <= 1;
