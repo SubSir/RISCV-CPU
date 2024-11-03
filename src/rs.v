@@ -27,6 +27,23 @@
 `define JALR 6'b100010
 `define AUIPC 6'b100011
 `define LUI 6'b100100
+
+`define ADD_alu 4'b0000
+`define SUB_alu 4'b0001
+`define AND_alu 4'b0010
+`define OR_alu  4'b0011
+`define XOR_alu 4'b0100
+`define SLL_alu 4'b0101
+`define SRL_alu 4'b0110
+`define SRA_alu 4'b0111
+`define SLT_alu 4'b1000
+`define SLTU_alu 4'b1001
+`define BEQ_alu 4'b1010
+`define BGE_alu 4'b1011
+`define BGEU_alu 4'b1100
+`define BNE_alu 4'b1101
+`define ADD_alu_pc 4'b1110
+
 module rs#(parameter ROB_WIDTH = 4,
            parameter RS_SIZE = 8)
           (input rst_in,
@@ -34,12 +51,12 @@ module rs#(parameter ROB_WIDTH = 4,
            input rdy_in,
            input clear,
            input from_decoder,
-           input [5:0]from_decoder_op,
-           input [4:0]from_decoder_rd,
-           input [4:0]from_decoder_rs1,
-           input [4:0]from_decoder_rs2,
-           input [31:0]from_decoder_imm,
-           input [31:0]from_decoder_pc,
+           input [5:0] from_decoder_op,
+           input [4:0] from_decoder_rd,
+           input [4:0] from_decoder_rs1,
+           input [4:0] from_decoder_rs2,
+           input [31:0] from_decoder_imm,
+           input [31:0] from_decoder_pc,
            input [ROB_WIDTH-1:0] from_decoder_tag,
            input from_reg_file,
            input [31:0] from_reg_file_rs1,
@@ -49,13 +66,16 @@ module rs#(parameter ROB_WIDTH = 4,
            input from_rob_update_id,
            input [4:0] from_rob_update_order,      // 位数与RS_SIZE 有关
            input [31:0] from_rob_update_wdata,
+           output reg to_decoder,                  // 有剩余为 1
            output reg to_alu,
            output reg [31:0] to_alu_a,
            output reg [31:0] to_alu_b,
+           output reg [3:0] to_alu_op,
            output reg to_reg_file,
            output reg [4:0] to_reg_file_rs1,
            output reg [4:0] to_reg_file_rs2,
            output reg to_rob,
+           output reg [4:0]to_rob_index,           // 位数与RS_SIZE 有关
            output reg [ROB_WIDTH-1:0] to_rob_tag,
            output reg [31:0] to_rob_op,
            output reg [4:0] to_rob_rd,
@@ -65,23 +85,40 @@ module rs#(parameter ROB_WIDTH = 4,
     
     reg busy [0:RS_SIZE-1];
     reg commited [0:RS_SIZE-1];
-    reg ready [0:RS_SIZE-1];
     reg [5:0] op [0:RS_SIZE-1];
+    reg [1:0] op_rob [0:RS_SIZE-1]; // 0 表示写寄存器, 1 表示跳转, 2 两个都要
     reg [4:0] rd [0:RS_SIZE-1];
-    reg vj_rd [0:RS_SIZE-1];
+    reg vj_ready [0:RS_SIZE-1];
     reg [31:0] vj [0:RS_SIZE-1];
     reg [4:0] qj [0:RS_SIZE-1];
-    reg vk_rd [0:RS_SIZE-1];
+    reg vk_ready [0:RS_SIZE-1];
     reg [31:0] vk [0:RS_SIZE-1];
     reg [4:0] qk [0:RS_SIZE-1];
     reg [31:0] imm [0:RS_SIZE-1];
     reg [31:0] pc [0:RS_SIZE-1];
+    reg alu_double[0:RS_SIZE-1]; // 0 单次 1 双次
     reg [ROB_WIDTH-1:0] rob_tag [0:RS_SIZE-1];
     reg  reorder_busy [0:31];
     reg [4:0] reorder [0:31];
-    reg [4:0] alu_rd;
+    reg [4:0] alu_index; // 大小跟RS_SIZE 有关
+    reg [4:0] reg_file_index; // 大小跟RS_SIZE 有关
     reg [4:0] reg_file_rs1;
     reg [4:0] reg_file_rs2;
+    
+    wire all_busy;
+    
+    generate
+    genvar i;
+    wire [RS_SIZE-1:0] intermediate_or;
+    
+    assign intermediate_or[0] = busy[0];
+    
+    for (i = 1; i < RS_SIZE; i = i + 1) begin : or_gen
+    assign intermediate_or[i] = intermediate_or[i-1] & busy[i];
+    end
+    
+    assign all_busy = intermediate_or[RS_SIZE-1];
+    endgenerate
     
     always @(posedge clk_in or posedge rst_in) begin
         if (rst_in || clear) begin
@@ -91,8 +128,9 @@ module rs#(parameter ROB_WIDTH = 4,
             to_rob      <= 0;
             to_alu      <= 0;
             to_reg_file <= 0;
-            
+            to_decoder  <= 1;
             end else begin
+            to_decoder <= !all_busy;
             if (from_rob_update) begin
                 for(int i = 0; i < RS_SIZE; i++)begin
                     if (busy[i] && qj[i] == from_rob_update_order)begin
@@ -105,20 +143,227 @@ module rs#(parameter ROB_WIDTH = 4,
                         vk_rd[i] <= 1;
                     end
                 end
+                reorder_busy[rd[from_rob_update_order]] <= 0;
             end
             
             
             if (from_decoder) begin
-                
+                logic found = 0;
+                for (int i = 0; i < RS_SIZE; i++) begin
+                    if (!busy[i] && !found) begin
+                        found = 1;
+                        busy[i]     <= 1;
+                        commited[i] <= 0;
+                        rd[i]       <= from_decoder_rd;
+                        logic rd  = 1;
+                        logic rs1 = 1;
+                        logic rs2 = 1; // 1 表示使用
+                        vj_ready[i]   <= 0;
+                        vk_ready[i]   <= 0;
+                        alu_double[i] <= 0;
+                        op_rob[i]     <= 2'b00;
+                        if (from_decoder_op == `ADD) begin
+                            op[i] <= `ADD_alu;
+                            end else if (from_decoder_op == `SUB) begin
+                            op[i] <= `SUB_alu;
+                            end else if (from_decoder_op == `AND) begin
+                            op[i] <= `AND_alu;
+                            end else if (from_decoder_op == `OR) begin
+                            op[i] <= `OR_alu;
+                            end else if (from_decoder_op == `XOR) begin
+                            op[i] <= `XOR_alu;
+                            end else if (from_decoder_op == `SLL) begin
+                            op[i] <= `SLL_alu;
+                            end else if (from_decoder_op == `SRL) begin
+                            op[i] <= `SRL_alu;
+                            end else if (from_decoder_op == `SRA) begin
+                            op[i] <= `SRA_alu;
+                            end else if (from_decoder_op == `SLT) begin
+                            op[i] <= `SLT_alu;
+                            end else if (from_decoder_op == `SLTU) begin
+                            op[i] <= `SLTU_alu;
+                            end else if (from_decoder_op == `ADDI) begin
+                            op[i] <= `ADD_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `ANDI) begin
+                            op[i] <= `AND_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `ORI) begin
+                            op[i] <= `OR_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `XORI) begin
+                            op[i] <= `XOR_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == ``SLLI) begin
+                            op[i] <= `SLL_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `SRLI) begin
+                            op[i] <= `SRL_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `SRAI) begin
+                            op[i] <= `SRA_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `SLTI) begin
+                            op[i] <= `SLT_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `SLTIU) begin
+                            op[i] <= `SLTU_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `BEQ) begin
+                            rd = 0;
+                            alu_double[i] <= 1;
+                            op_rob[i]     <= 2'b01;
+                            op[i]         <= `BEQ_alu;
+                            pc[i]         <= from_decoder_pc;
+                            end else if (from_decoder_op == `BGE) begin
+                            rd = 0;
+                            alu_double[i] <= 1;
+                            op_rob[i]     <= 2'b01;
+                            op[i]         <= `BGE_alu;
+                            pc[i]         <= from_decoder_pc;
+                            end else if (from_decoder_op == `BGEU) begin
+                            rd = 0;
+                            alu_double[i] <= 1;
+                            op_rob[i]     <= 2'b01;
+                            op[i]         <= `BGEU_alu;
+                            pc[i]         <= from_decoder_pc;
+                            end else if (from_decoder_op == `BLT) begin
+                            rd = 0;
+                            alu_double[i] <= 1;
+                            op_rob[i]     <= 2'b01;
+                            op[i]         <= `SLT;
+                            pc[i]         <= from_decoder_pc;
+                            end else if (from_decoder_op == `BLTU) begin
+                            rd = 0;
+                            alu_double[i] <= 1;
+                            op_rob[i]     <= 2'b01;
+                            op[i]         <= `SLTU;
+                            pc[i]         <= from_decoder_pc;
+                            end else if (from_decoder_op == `BNE) begin
+                            rd = 0;
+                            alu_double[i] <= 1;
+                            op_rob[i]     <= 2'b01;
+                            op[i]         <= `BNE_alu;
+                            pc[i]         <= from_decoder_pc;
+                            end else if (from_decoder_op == `JAL) begin
+                            rs1 = 0;
+                            rs2 = 0;
+                            vj[i]     <= from_decoder_pc;
+                            vk[i]     <= from_decoder_imm;
+                            op[i]     <= `ADD_alu_pc;
+                            op_rob[i] <= 2'b10;
+                            end else if (from_decoder_op == `JALR) begin
+                            rs2 = 0;
+                            vk[i]     <= from_decoder_imm;
+                            op[i]     <= `ADD_alu_pc;
+                            op_rob[i] <= 2'b10;
+                            end else if (from_decoder_op == `LUI)begin
+                            op[i] <= `ADD_alu;
+                            rs2 = 0;
+                            vk[i] <= from_decoder_imm;
+                            end else if (from_decoder_op == `AUIPC)begin
+                            op[i] <= `ADD_alu_pc;
+                            rs1 = 0;
+                            rs2 = 0;
+                            vj[i] <= from_decoder_pc;
+                            vk[i] <= from_decoder_imm;
+                        end
+                        
+                        if (rs1 == 1) begin
+                            vj_ready[i] <= 0;
+                            if (reorder_busy[from_decoder_rs1]) begin
+                                qj[i] <= reorder[from_decoder_rs1];
+                                end else begin
+                                reg_file_index  <= i;
+                                to_reg_file     <= 1;
+                                to_reg_file_rs1 <= from_decoder_rs1;
+                            end
+                            end else begin
+                            vj_ready[i]     <= 1;
+                            to_reg_file_rs1 <= 0;
+                        end
+                        
+                        if (rs2 == 1) begin
+                            vk_ready[i] <= 0;
+                            if (reorder_busy[from_decoder_rs2]) begin
+                                qk[i] <= reorder[from_decoder_rs2];
+                                end else begin
+                                reg_file_index  <= i;
+                                to_reg_file     <= 1;
+                                to_reg_file_rs2 <= from_decoder_rs2;
+                            end
+                            end else begin
+                            vj_ready[i]     <= 1;
+                            to_reg_file_rs2 <= 0;
+                        end
+                        
+                        if (rd == 1) begin
+                            reorder_busy[form_decoder_rd] <= 1;
+                            reorder[from_decoder_rd]      <= i;
+                        end
+                    end
+                end
             end
-            
-            if (to_alu) begin
-                
-            end
-            
-            if (from_reg_file)begin
-            end
-            
         end
+        
+        
+        
+        if (to_alu) begin
+            if (alu_double[alu_index] == 0)begin
+                busy[alu_index] <= 0;
+                to_rob          <= 1;
+                to_rob_index    <= alu_index;
+                to_rob_tag      <= rob_tag[alu_index];
+                to_rob_op       <= op_rob[alu_index];
+                to_rob_rd       <= rd[alu_index];
+                if (op_rob[alu_index] == 2'b00) begin
+                    to_rob_wdata <= from_alu_result;
+                    end else if (op_rob[alu_index] == 2'b01) begin
+                    to_rob_jump <= from_alu_result;
+                    end else if (op_rob[alu_index] == 2'b10) begin
+                    to_rob_wdata <= pc;
+                    to_rob_jump  <= from_alu_result;
+                end
+                end else begin
+                if (from_alu_result == 32'b1) begin
+                    to_alu                <= 1;
+                    alu_double[alu_index] <= 0;
+                    to_alu_index          <= alu_index;
+                    to_alu_op             <= `ADD_alu_pc;
+                    to_alu_a              <= imm[alu_index];
+                    to_alu_b              <= pc[alu_index];
+                    end else begin
+                    busy[alu_index] <= 0;
+                end
+            end
+        end
+        
+        if (from_reg_file)begin
+            vj_ready[reg_file_index] <= 1;
+            vj[reg_file_index]       <= from_reg_file_rs1;
+            vk_ready[reg_file_index] <= 1;
+            vk[reg_file_index]       <= from_reg_file_rs2;
+        end
+        
+        for(int i = 0; i < RS_SIZE; i++) begin
+            if (busy[i] && !commited[i] && vj_ready[i] && vk_ready[i]) begin
+                to_alu      <= 1;
+                alu_index   <= i;
+                to_alu_a    <= vj[i];
+                to_alu_b    <= vk[i];
+                to_alu_op   <= op[i];
+                commited[i] <= 1; // 用作alu
+            end
+        end
+        
     end
 endmodule //rs

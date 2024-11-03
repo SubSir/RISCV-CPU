@@ -45,6 +45,7 @@ module Decoder #(parameter ROB_WIDTH = 4)
                  input [31:0] pc,
                  input [31:0] instruction,
                  input from_rob,                       // rob 有剩余为1
+                 input from_rs,                       // rs 有剩余为1
                  input [ROB_WIDTH-1:0]from_rob_tag,
                  output reg to_if,
                  output reg to_rs,
@@ -64,7 +65,7 @@ module Decoder #(parameter ROB_WIDTH = 4)
                  output reg to_rob,
                  );
     always @(posedge clk or negedge reset) begin
-        if (rst_in | rdy_in & clear | !from_if | !from_rob) begin
+        if (rst_in | rdy_in & clear | !from_if | !from_rob | !from_rs) begin
             to_rs  <= 0;
             to_lsb <= 0;
             to_rob <= 0;

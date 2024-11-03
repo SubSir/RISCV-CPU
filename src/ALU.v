@@ -8,6 +8,11 @@
 `define SRA 4'b0111
 `define SLT 4'b1000
 `define SLTU 4'b1001
+`define BEQ 4'b1010
+`define BGE 4'b1011
+`define BGEU 4'b1100
+`define BNE 4'b1101
+`define ADD_pc 4'b1110
 
 module ALU #(parameter ROB_WIDTH = 4)
             (input clk_in,
@@ -35,8 +40,13 @@ module ALU #(parameter ROB_WIDTH = 4)
                 `SLL: result  <= a << b[4:0];
                 `SRL: result  <= a >> b[4:0];
                 `SRA: result  <= a >>> b[4:0];
-                `SLT: result  <= a < b;
-                `SLTU: result <= $unsigned(a) < $unsigned(b);
+                `SLT: result  <= (a < b) ? 32'b1 : 32'b0;
+                `SLTU: result <= ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0;
+                `BEQ: result  <  = (a == b)? 32'b1 : 32'b0;
+                `BGE: result  <  = (a >  = b)? 32'b1 : 32'b0;
+                `BGEU: result  < = ($unsigned(a) > = $unsigned(b))? 32'b1 : 32'b0;
+                `BNE: result  <  = (a !  = b)? 32'b1 : 32'b0;
+                `ADD_pc: result <= a + b-32'd4;
             endcase
         end
     end
