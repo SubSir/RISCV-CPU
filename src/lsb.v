@@ -23,10 +23,10 @@ module lsb#(parameter LSB_SIZE = 4,
             input [31:0]from_rs_address,
             input [31:0]from_rob,
             input [31:0]from_rob_tag,
-            input wire [7:0] mem_din,
-            output wire [7:0] mem_dout,
-            output wire [31:0] mem_a,
-            output wire mem_wr,
+            input [7:0] mem_din,
+            output [7:0] mem_dout,
+            output [31:0] mem_a,
+            output mem_wr,
             output reg to_if,
             output reg to_decoder,
             output reg to_rob,
@@ -92,6 +92,7 @@ module lsb#(parameter LSB_SIZE = 4,
                 
                 logic next = 0;
                 
+                to_rob <= 0;
                 if (to_if) begin
                     load_data[remain] <= mem_din;
                     mem_dout          <= store_data[remain];
@@ -114,39 +115,38 @@ module lsb#(parameter LSB_SIZE = 4,
                             to_rob_data <= {load_data[3], load_data[2], load_data[1], load_data[0]};
                         end
                     end
-                    end else begin
-                    next = 1;
                 end
                 
-                if (next) begin
-                    head <= head + 1;
-                    if (head + 1 == tail) begin
+                logic head_tmp = head + next;
+                if (!to_if or remain == 2'b00) begin
+                    head <= head_tmp;
+                    if (head_tmp == tail) begin
                         to_if <= 0;
                         end else begin
                         to_if <= 1;
-                        mem_a <= address[head+1];
-                        if (op[head+1] == `LB || op[head+1] == `LBU) begin
+                        mem_a <= address[head_tmp];
+                        if (op[head_tmp] == `LB || op[head_tmp] == `LBU) begin
                             remain <= 2'b00;
                             mem_wr <= 0;
-                            end else if (op[head+1] == `LH | op[head+1] == `LHU) begin
+                            end else if (op[head_tmp] == `LH | op[head_tmp] == `LHU) begin
                             remain <= 2'b01;
                             mem_wr <= 0;
-                            end else if (op[head+1] == `LW) begin
+                            end else if (op[head_tmp] == `LW) begin
                             remain <= 2'b11;
                             mem_wr <= 0;
-                            end else if (execute[head+1] && op[head+1] == `SB) begin
+                            end else if (execute[head_tmp] && op[head_tmp] == `SB) begin
                             remain        <= 2'b00;
-                            store_data[0] <= wdata[head+1][7:0];
-                            end else if (execute[head+1] && op[head+1] == `SH) begin
+                            store_data[0] <= wdata[head_tmp][7:0];
+                            end else if (execute[head_tmp] && op[head_tmp] == `SH) begin
                             remain        <= 2'b01;
-                            store_data[0] <= wdata[head+1][15:8];
-                            store_data[1] <= wdata[head+1][7:0];
-                            end else if (execute[head+1] && op[head+1] == `SW) begin
+                            store_data[0] <= wdata[head_tmp][15:8];
+                            store_data[1] <= wdata[head_tmp][7:0];
+                            end else if (execute[head_tmp] && op[head_tmp] == `SW) begin
                             remain        <= 2'b11;
-                            store_data[0] <= wdata[head+1][31:24];
-                            store_data[1] <= wdata[head+1][23:16];
-                            store_data[2] <= wdata[head+1][15:8];
-                            store_data[3] <= wdata[head+1][7:0];
+                            store_data[0] <= wdata[head_tmp][31:24];
+                            store_data[1] <= wdata[head_tmp][23:16];
+                            store_data[2] <= wdata[head_tmp][15:8];
+                            store_data[3] <= wdata[head_tmp][7:0];
                             end else begin
                             to_if <= 0;
                         end
