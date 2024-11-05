@@ -52,10 +52,11 @@
 `define BNE_alu 4'b1101
 `define ADD_alu_pc 4'b1110
 
-`define WRITE_rob 2'b00
-`define JUMP_rob 2'b01
-`define BOTH_rob 2'b10
-`define LS_rob 2'b11
+`define WRITE_rob 3'b000
+`define JUMP_rob 3'b001
+`define BOTH_rob 3'b010
+`define LS_rob 3'b011
+`define NOTHING_rob 3'b100
 
 `define LB_lsb 3'b000
 `define LBU_lsb 3'b001
@@ -85,8 +86,8 @@ module rs#(parameter ROB_WIDTH = 4,
            input [31:0] from_reg_file_rs1,
            input [31:0] from_reg_file_rs2,
            input [31:0] from_alu_result,
+           input from_rob,
            input from_rob_update,
-           input from_rob_update_id,
            input [RS_SIZE-1:0] from_rob_update_order,
            input [31:0] from_rob_update_wdata,
            output reg to_decoder,                     // 有剩余为 1
@@ -100,7 +101,7 @@ module rs#(parameter ROB_WIDTH = 4,
            output reg to_rob,
            output reg [RS_WIDTH-1:0]to_rob_index,
            output reg [ROB_WIDTH-1:0] to_rob_tag,
-           output reg [31:0] to_rob_op,
+           output reg [2:0] to_rob_op,
            output reg [4:0] to_rob_rd,
            output reg [31:0] to_rob_wdata,
            output reg [31:0] to_rob_jump,
@@ -111,9 +112,10 @@ module rs#(parameter ROB_WIDTH = 4,
            output reg [31:0]to_lsb_address);
     
     reg busy [0:RS_SIZE-1];
+    reg cal [0:RS_SIZE-1];
     reg commited [0:RS_SIZE-1];
     reg [5:0] op [0:RS_SIZE-1];
-    reg [1:0] op_rob [0:RS_SIZE-1];
+    reg [2:0] op_rob [0:RS_SIZE-1];
     reg [3:0] op_lsb [0:RS_SIZE-1];
     reg [4:0] rd [0:RS_SIZE-1];
     reg vj_ready [0:RS_SIZE-1];
@@ -159,6 +161,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             vk_rd[i] <= 1;
                         end
                     end
+                    busy[from_rob_update_order]             <= 0;
                     reorder_busy[rd[from_rob_update_order]] <= 0;
                 end
                 
@@ -170,6 +173,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             found = 1;
                             busy[i]     <= 1;
                             busy_cnt    <= busy_cnt + 1;
+                            cal[i]      <= 0;
                             commited[i] <= 0;
                             rd[i]       <= from_decoder_rd;
                             logic rd  = 1;
@@ -388,15 +392,14 @@ module rs#(parameter ROB_WIDTH = 4,
             
             
             
-            if (to_alu) begin
+            if (to_alu && ! from_rob) begin
                 if (alu_double[alu_index] == 0)begin
-                    busy[alu_index] <= 0;
-                    busy_cnt        <= busy_cnt - 1;
-                    to_rob          <= 1;
-                    to_rob_index    <= alu_index;
-                    to_rob_tag      <= rob_tag[alu_index];
-                    to_rob_op       <= op_rob[alu_index];
-                    to_rob_rd       <= rd[alu_index];
+                    commited[alu_index] <= 1;
+                    to_rob              <= 1;
+                    to_rob_index        <= alu_index;
+                    to_rob_tag          <= rob_tag[alu_index];
+                    to_rob_op           <= op_rob[alu_index];
+                    to_rob_rd           <= rd[alu_index];
                     if (op_rob[alu_index] == WRITE_rob) begin
                         to_rob_wdata <= from_alu_result;
                         end else if (op_rob[alu_index] == JUMP_rob) begin
@@ -420,8 +423,11 @@ module rs#(parameter ROB_WIDTH = 4,
                         to_alu_a              <= imm[alu_index];
                         to_alu_b              <= pc[alu_index];
                         end else begin
-                        busy[alu_index] <= 0;
-                        busy_cnt        <= busy_cnt - 1;
+                        commited[alu_index] <= 1;
+                        to_rob              <= 1;
+                        to_rob_index        <= alu_index;
+                        to_rob_tag          <= rob_tag[alu_index];
+                        to_rob_op           <= `NOTHING_rob;
                     end
                 end
             end
@@ -434,7 +440,7 @@ module rs#(parameter ROB_WIDTH = 4,
             end
             
             for(int i = 0; i < RS_SIZE; i++) begin
-                if (busy[i] && !commited[i] && vj_ready[i] && vk_ready[i]) begin
+                if (busy[i] && !cal[i] && vj_ready[i] && vk_ready[i]) begin
                     to_alu    <= 1;
                     alu_index <= i;
                     to_alu_a  <= vj[i];
@@ -443,9 +449,9 @@ module rs#(parameter ROB_WIDTH = 4,
                         end else begin
                         to_alu_b <= vk[i];
                     end
-                    to_alu_b    <= vk[i];
-                    to_alu_op   <= op[i];
-                    commited[i] <= 1; // 用作alu
+                    to_alu_b  <= vk[i];
+                    to_alu_op <= op[i];
+                    cal[i]    <= 1; // 用作alu
                 end
             end
         end

@@ -21,8 +21,8 @@ module lsb#(parameter LSB_SIZE = 4,
             input [4:0] from_rs_rd,
             input [31:0]from_rs_wdata,
             input [31:0]from_rs_address,
-            input [31:0]from_rob,
-            input [31:0]from_rob_tag,
+            input from_rob,
+            input [ROB_WIDTH-1:0]from_rob_tag,
             input [7:0] mem_din,
             output [7:0] mem_dout,
             output [31:0] mem_a,
@@ -35,9 +35,9 @@ module lsb#(parameter LSB_SIZE = 4,
             );
     reg ready[0:ROB_DEPTH-1];
     reg execute[0:ROB_DEPTH-1];
-    reg [ROB_WIDTH-1:0] tag;
     reg [LSB_WIDTH-1:0] head;
     reg [LSB_WIDTH-1:0] tail;
+    reg [ROB_WIDTH-1:0] tag[0:LSB_SIZE-1];
     reg [4:0] rd[0:LSB_SIZE-1];
     reg [3:0] op[0:LSB_SIZE-1];
     reg [31:0] wdata[0:LSB_SIZE-1];
