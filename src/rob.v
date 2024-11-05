@@ -12,7 +12,7 @@ module rob#(parameter ROB_WIDTH = 4,
             input rdy_in,
             input from_decoder,
             input from_rs,
-            input [RS_WIDTH-1:0]from_rs_index,
+            input [RS_WIDTH-1:0] from_rs_index,
             input [ROB_WIDTH-1:0] from_rs_tag,
             input [2:0] from_rs_op,
             input [4:0] from_rs_rd,
@@ -20,19 +20,18 @@ module rob#(parameter ROB_WIDTH = 4,
             input [31:0] from_rs_jump,
             output reg clear,
             output reg to_decoder,
-            output reg [ROB_WIDTH-1:0]to_decoder_tag,
+            output reg [ROB_WIDTH-1:0] to_decoder_tag,
             output reg to_reg_file,
             output reg [4:0] to_reg_file_rd,
             output reg [31:0] to_reg_file_wdata,
             output reg to_lsb,
-            output reg [ROB_WIDTH-1:0]to_lsb_tag,
+            output reg [ROB_WIDTH-1:0] to_lsb_tag,
             output reg to_rs,
             output reg to_rs_update,
-            output reg[RS_SIZE-1:0]to_rs_update_order,
+            output reg [RS_WIDTH-1:0] to_rs_update_order,
             output reg [31:0] to_rs_update_wdata,
             output reg to_if,
-            output [31:0]reg to_if_pc,
-            );
+            output reg [31:0] to_if_pc);
     reg [ROB_WIDTH-1:0] head;
     reg [ROB_WIDTH-1:0] tail;
     reg [RS_WIDTH-1:0] rs_index[ROB_SIZE-1:0];
@@ -53,7 +52,7 @@ module rob#(parameter ROB_WIDTH = 4,
                 to_rs_update   <= 0;
                 clear          <= 0;
                 end else begin
-                if (head ! = tail)begin
+                if (head != tail)begin
                     if (ready[head]) begin
                         clear              <= 0;
                         to_rs_update       <= 1;

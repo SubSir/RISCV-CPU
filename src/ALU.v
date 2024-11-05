@@ -19,15 +19,14 @@ module ALU #(parameter ROB_WIDTH = 4)
              input rst_in,
              input rdy_in,
              input clear,
-             input cal,                // 要计算为1
+             input cal,                 // 要计算为1
              input [31:0] a,
              input [31:0] b,
              input [3:0] alu_op,
              output reg cal_out,
-             output reg [31:0] result,
-             );
+             output reg [31:0] result);
     
-    always @(posedge clk or negedge reset) begin
+    always @(posedge clk_in or negedge rst_in) begin
         if (rst_in | rdy_in & clear | !cal) begin
             cal_out <= 0;
             end else begin
@@ -42,10 +41,10 @@ module ALU #(parameter ROB_WIDTH = 4)
                 `SRA: result  <= a >>> b[4:0];
                 `SLT: result  <= (a < b) ? 32'b1 : 32'b0;
                 `SLTU: result <= ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0;
-                `BEQ: result  <  = (a == b)? 32'b1 : 32'b0;
-                `BGE: result  <  = (a >  = b)? 32'b1 : 32'b0;
-                `BGEU: result  < = ($unsigned(a) > = $unsigned(b))? 32'b1 : 32'b0;
-                `BNE: result  <  = (a !  = b)? 32'b1 : 32'b0;
+                `BEQ: result  <= (a == b)? 32'b1 : 32'b0;
+                `BGE: result  <= (a >= b)? 32'b1 : 32'b0;
+                `BGEU: result  <= ($unsigned(a) >= $unsigned(b))? 32'b1 : 32'b0;
+                `BNE: result  <= (a != b)? 32'b1 : 32'b0;
                 `ADD_pc: result <= a + b-32'd4;
             endcase
         end

@@ -63,9 +63,15 @@ module Decoder #(parameter ROB_WIDTH = 4)
                  output reg [4:0] to_lsb_rs1,
                  output reg [31:0] to_lsb_imm,
                  output reg [ROB_WIDTH-1:0]to_lsb_tag,
-                 output reg to_rob,
-                 );
-    always @(posedge clk or negedge reset) begin
+                 output reg to_rob);
+    
+    wire[6:0] func7  = instruction[31:25];
+    wire[2:0] func3  = instruction[14:12];
+    wire[6:0] opcode = instruction[6:0];
+    wire[4:0] rd     = instruction[11:7];
+    wire[4:0] rs1    = instruction[19:15];
+    wire[4:0] rs2    = instruction[24:20];
+    always @(posedge clk_in or negedge rst_in) begin
         if (rdy_in) begin
             if (rst_in | clear | !from_if | !from_rob | !from_rs | !from_lsb) begin
                 to_rs  <= 0;
@@ -77,15 +83,9 @@ module Decoder #(parameter ROB_WIDTH = 4)
                     to_if <= 0;
                 end
                 end else begin
-                to_rs  <= 1;
-                to_lsb <= 0;
-                to_rob <= 1;
-                wire[6:0] func7  = instruction[31:25];
-                wire[2:0] func3  = instruction[14:12];
-                wire[6:0] opcode = instruction[6:0];
-                wire[4:0] rd     = instruction[11:7];
-                wire[4:0] rs1    = instruction[19:15];
-                wire[4:0] rs2    = instruction[24:20];
+                to_rs      <= 1;
+                to_lsb     <= 0;
+                to_rob     <= 1;
                 to_lsb_rd  <= rd;
                 to_rs_rd   <= rd;
                 to_lsb_rs1 <= rs1;
@@ -250,11 +250,11 @@ module Decoder #(parameter ROB_WIDTH = 4)
                     end else if (opcode == 7'b0010111) begin
                     // AUIPC
                     to_rs_op  <= `AUIPC;
-                    to_rs_imm <= $signed(instruction[31:12], 12'b0);
+                    to_rs_imm <= {instruction[31:12], 12'b0};
                     end else if (opcode == 7'b0110111) begin
                     // LUI
                     to_rs_op  <= `LUI;
-                    to_rs_imm <= $signed(instruction[31:12], 12'b0);
+                    to_rs_imm <= {instruction[31:12], 12'b0};
                 end
             end
         end

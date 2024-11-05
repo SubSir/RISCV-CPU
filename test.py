@@ -20,7 +20,7 @@ def find_v_sources(src_dir):
     return [str(f) for f in Path(src_dir).rglob("*.v")]
 
 
-def run_command(command, cwd=None):
+def run_command(command, cwd=None) -> str:
     result = subprocess.run(
         command, shell=True, cwd=cwd, capture_output=True, text=True
     )
@@ -29,6 +29,13 @@ def run_command(command, cwd=None):
         print(f"Output: {result.stdout}")
         print(f"Error: {result.stderr}")
         exit(1)
+    out = result.stdout
+    if out == "":
+        return ""
+    out = out.split("IO:Return")[0]
+    out = out.split("VCD info: dumpfile test.vcd opened for output.\n")[1]
+    with open(os.path.join(TESTSPACE_DIR, "my.ans"), "w") as f:
+        f.write(out)
 
 
 def testcases():
@@ -122,60 +129,26 @@ def clean():
         os.remove(file)
 
 
+def check():
+    my_ans_path = os.path.join(TESTSPACE_DIR, "my.ans")
+    test_ans_path = os.path.join(TESTSPACE_DIR, "test.ans")
+    with open(my_ans_path, "r") as f1, open(test_ans_path, "r") as f2:
+        my_ans = f1.read()
+        test_ans = f2.read()
+        if my_ans == test_ans:
+            print("PASS")
+        else:
+            print("FAIL")
+
+
 def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Build and run Verilog simulations.")
-    subparsers = parser.add_subparsers(dest="command")
-
-    parser_testcases = subparsers.add_parser("testcases", help="Build testcases")
-    parser_build_sim = subparsers.add_parser("build_sim", help="Build simulation")
-    parser_build_sim_test = subparsers.add_parser(
-        "build_sim_test", help="Build simulation test"
-    )
-    parser_build_fpga_test = subparsers.add_parser(
-        "build_fpga_test", help="Build FPGA test"
-    )
-    parser_run_sim = subparsers.add_parser("run_sim", help="Run simulation")
-    parser_run_fpga = subparsers.add_parser("run_fpga", help="Run FPGA")
-    parser_clean = subparsers.add_parser("clean", help="Clean build files")
-
-    parser_build_sim_test.add_argument("--name", required=True, help="Testcase name")
-    parser_build_fpga_test.add_argument("--name", required=True, help="Testcase name")
-    parser_run_sim.add_argument("--name", required=True, help="Testcase name")
-    parser_run_fpga.add_argument("--name", required=True, help="Testcase name")
-
-    args = parser.parse_args()
-
     v_sources = find_v_sources(SRC_DIR)
 
-    if args.command == "testcases":
-        testcases()
-    elif args.command == "build_sim":
-        build_sim(v_sources)
-    elif args.command == "build_sim_test":
-        no_testcase_name_check(args.name)
-        build_sim_test(args.name)
-    elif args.command == "build_fpga_test":
-        no_testcase_name_check(args.name)
-        build_fpga_test(args.name)
-    elif args.command == "run_sim":
-        no_testcase_name_check(args.name)
-        build_sim(v_sources)
-        build_sim_test(args.name)
-        run_sim()
-    elif args.command == "run_fpga":
-        no_testcase_name_check(args.name)
-        build_fpga_test(args.name)
-        run_fpga(args.name)
-    elif args.command == "clean":
-        clean()
-    else:
-        parser.print_help()
-        no_testcase_name_check("000")
-        build_sim(v_sources)
-        build_sim_test("000")
-        run_sim()
+    no_testcase_name_check("000")
+    build_sim(v_sources)
+    build_sim_test("000")
+    run_sim()
+    check()
 
 
 if __name__ == "__main__":
