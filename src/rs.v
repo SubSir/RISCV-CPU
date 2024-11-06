@@ -82,7 +82,6 @@ module rs#(parameter ROB_WIDTH = 4,
            input [31:0] from_decoder_imm,
            input [31:0] from_decoder_pc,
            input [ROB_WIDTH-1:0] from_decoder_tag,
-           input from_reg_file,
            input [31:0] from_reg_file_rs1,
            input [31:0] from_reg_file_rs2,
            input [31:0] from_alu_result,
@@ -107,6 +106,7 @@ module rs#(parameter ROB_WIDTH = 4,
            output reg [31:0] to_rob_jump,
            output reg to_lsb,
            output reg [3:0]to_lsb_op,
+           output reg [ROB_WIDTH-1:0]to_lsb_tag,
            output reg [4:0]to_lsb_rd,
            output reg [31:0]to_lsb_wdata,
            output reg [31:0]to_lsb_address);
@@ -415,6 +415,7 @@ module rs#(parameter ROB_WIDTH = 4,
                         end else if (op_rob[alu_index] == `LS_rob) begin
                         to_lsb         <= 1;
                         to_lsb_op      <= op_lsb[alu_index];
+                        to_lsb_tag     <= rob_tag[alu_index];
                         to_lsb_address <= from_alu_result;
                         to_lsb_wdata   <= vk[alu_index];
                         to_lsb_rd      <= rd[alu_index];
@@ -436,7 +437,7 @@ module rs#(parameter ROB_WIDTH = 4,
                 end
             end
             
-            if (from_reg_file)begin
+            if (to_reg_file)begin
                 vj_ready[reg_file_index] <= 1;
                 vj[reg_file_index]       <= from_reg_file_rs1;
                 vk_ready[reg_file_index] <= 1;

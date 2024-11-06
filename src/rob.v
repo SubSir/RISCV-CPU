@@ -30,7 +30,6 @@ module rob#(parameter ROB_WIDTH = 4,
             output reg to_rs_update,
             output reg [RS_WIDTH-1:0] to_rs_update_order,
             output reg [31:0] to_rs_update_wdata,
-            output reg to_if,
             output reg [31:0] to_if_pc);
     reg [ROB_WIDTH-1:0] head;
     reg [ROB_WIDTH-1:0] tail;
@@ -65,14 +64,12 @@ module rob#(parameter ROB_WIDTH = 4,
                             to_reg_file_wdata <= wdata[head];
                             end else if (op[head] == `JUMP)begin
                             clear    <= 1;
-                            to_if    <= 1;
                             to_if_pc <= jump[head];
                             end else if (op[head] == `BOTH)begin
                             to_reg_file       <= 1;
                             to_reg_file_rd    <= rd[head];
                             to_reg_file_wdata <= wdata[head];
                             clear             <= 1;
-                            to_if             <= 1;
                             to_if_pc          <= jump[head];
                             end else if (op[head] == `LS)begin
                             to_lsb     <= 1;

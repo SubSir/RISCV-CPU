@@ -7,7 +7,7 @@
 `define SH 3'b110
 `define SW 3'b111
 
-module lsb#(parameter LSB_SIZE = 4,
+module Lsb#(parameter LSB_SIZE = 4,
             parameter LSB_WIDTH = 2,
             parameter ROB_WIDTH = 4)
            (input rst_in,
@@ -15,7 +15,7 @@ module lsb#(parameter LSB_SIZE = 4,
             input rdy_in,
             input clear,
             input from_decoder,
-            input [31:0] from_decoder_tag,
+            input [ROB_WIDTH-1:0] from_decoder_tag,
             input from_rs,
             input [3:0]from_rs_op,
             input [4:0] from_rs_rd,
@@ -154,4 +154,4 @@ module lsb#(parameter LSB_SIZE = 4,
         end
     end
     
-endmodule //lsb
+endmodule //Lsb

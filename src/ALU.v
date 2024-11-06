@@ -23,12 +23,10 @@ module ALU #(parameter ROB_WIDTH = 4)
              input [31:0] a,
              input [31:0] b,
              input [3:0] alu_op,
-             output reg cal_out,
              output reg [31:0] result);
     
     always @(posedge clk_in or negedge rst_in) begin
         if (rst_in | rdy_in & clear | !cal) begin
-            cal_out <= 0;
             end else begin
             case (alu_op)
                 `ADD: result  <= a + b;
