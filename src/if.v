@@ -18,7 +18,7 @@ module IF #(parameter IF_WIDTH = 2,
     reg [31:0] ins[0:IF_SIZE-1];
     reg [31:0] ins_pc[0:IF_SIZE-1];
     reg loading;
-    reg [1:0] remain;
+    reg [2:0] remain;
     reg [7:0] load_data[0:3];
     reg next;
     reg [31:0] pc_tmp;
@@ -42,25 +42,27 @@ module IF #(parameter IF_WIDTH = 2,
                     next   = 0;
                     pc_tmp = pc;
                     if (loading) begin
-                        load_data[remain] <= mem_din;
-                        if (remain != 2'b00) begin
+                        if (remain != 3'd4) begin
+                            load_data[remain] <= mem_din;
+                        end
+                        if (remain != 3'b0) begin
                             mem_a  <= mem_a + 32'd1;
-                            remain <= remain -2'b01;
+                            remain <= remain -3'b1;
                             end else begin
                             next = 1;
-                            ins[tail]    <= {load_data[3], load_data[2], load_data[1], load_data[0]};
-                            ins_pc[tail] <= pc;
+                            ins[tail]    <= {load_data[3], load_data[2], load_data[1], mem_din};
+                            ins_pc[tail] <= pc + 32'd16;
                             pc           <= pc + 32'd4;
                             pc_tmp = pc+32'd4;
                         end
                     end
                     
                     tail_tmp = tail + next;
-                    if (!loading || remain == 2'b00) begin
+                    if (!loading || remain == 3'b0) begin
                         loading <= 1;
                         tail    <= tail_tmp;
                         if (tail_tmp + 1 != head) begin
-                            remain <= 2'b11;
+                            remain <= 3'b100;
                             mem_wr <= 0;
                             mem_a  <= pc_tmp;
                             end else begin
