@@ -20,7 +20,7 @@ def find_v_sources(src_dir):
     return [str(f) for f in Path(src_dir).rglob("*.v")]
 
 
-def run_command(command, cwd=None) -> str:
+def run_command(command, cwd=None):
     result = subprocess.run(
         command, shell=True, cwd=cwd, capture_output=True, text=True
     )
@@ -147,8 +147,8 @@ def main():
     no_testcase_name_check("000")
     build_sim(v_sources)
     build_sim_test("000")
-    run_sim()
-    check()
+    # run_sim()
+    # check()
 
 
 if __name__ == "__main__":

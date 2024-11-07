@@ -46,7 +46,7 @@ module Lsb#(parameter LSB_SIZE = 4,
     reg [1:0] remain;
     reg [7:0] load_data[0:3];
     reg [7:0] store_data[0:3];
-    reg [LSB_WIDTH-1:0] i;
+    integer i;
     reg next;
     reg [LSB_WIDTH-1:0] head_tmp;
     always @(posedge clk_in or posedge rst_in)begin
@@ -72,7 +72,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                 end
                 
                 if (from_rs)begin
-                    for(i = head;i != tail;i++)begin
+                    for(i = head;i != tail;i = i + 1)begin
                         if (tag[i] == from_rs_tag)begin
                             rd[i]      <= from_rs_rd;
                             wdata[i]   <= from_rs_wdata;
@@ -83,7 +83,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                 end
                 
                 if (from_rob) begin
-                    for(i = head; i != tail; i++)begin
+                    for(i = head; i != tail; i = i + 1)begin
                         if (tag[i] == from_rob_tag)begin
                             execute[i] <= 1;
                         end

@@ -134,8 +134,8 @@ module rs#(parameter ROB_WIDTH = 4,
     reg [RS_WIDTH-1:0] reg_file_index;
     reg [4:0] reg_file_rs1;
     reg [4:0] reg_file_rs2;
-    reg [RS_WIDTH-1:0] busy_cnt;
-    reg [RS_WIDTH-1:0] i;
+    reg [RS_WIDTH:0] busy_cnt;
+    integer i;
     reg found;
     reg rd_use;
     reg rs1_use;
@@ -144,7 +144,7 @@ module rs#(parameter ROB_WIDTH = 4,
     always @(posedge clk_in or posedge rst_in) begin
         if (rdy_in)begin
             if (rst_in || clear) begin
-                for (i = 0; i < RS_SIZE; i++) begin
+                for (i = 0; i < RS_SIZE; i = i + 1) begin
                     busy[i] <= 0;
                 end
                 to_rob      <= 0;
@@ -153,9 +153,9 @@ module rs#(parameter ROB_WIDTH = 4,
                 to_decoder  <= 1;
                 busy_cnt    <= 0;
                 end else begin
-                to_decoder <= (busy_cnt > 0);
+                to_decoder <= (busy_cnt < RS_SIZE);
                 if (from_rob_update) begin
-                    for(i = 0; i < RS_SIZE; i++)begin
+                    for(i = 0; i < RS_SIZE; i = i + 1)begin
                         if (busy[i] && qj[i] == from_rob_update_order)begin
                             vj[i]    <= from_rob_update_wdata;
                             vj_ready[i] <= 1;
@@ -173,7 +173,7 @@ module rs#(parameter ROB_WIDTH = 4,
                 
                 if (from_decoder) begin
                     found = 0;
-                    for (i = 0; i < RS_SIZE; i++) begin
+                    for (i = 0; i < RS_SIZE; i = i + 1) begin
                         if (!busy[i] && !found) begin
                             found = 1;
                             busy[i]     <= 1;
@@ -226,7 +226,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                 op[i] <= `XOR_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
-                                end else if (from_decoder_op == ``SLLI) begin
+                                end else if (from_decoder_op == `SLLI) begin
                                 op[i] <= `SLL_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
@@ -444,7 +444,7 @@ module rs#(parameter ROB_WIDTH = 4,
                 vk[reg_file_index]       <= from_reg_file_rs2;
             end
             
-            for(i = 0; i < RS_SIZE; i++) begin
+            for(i = 0; i < RS_SIZE; i = i + 1) begin
                 if (busy[i] && !cal[i] && vj_ready[i] && vk_ready[i]) begin
                     to_alu    <= 1;
                     alu_index <= i;

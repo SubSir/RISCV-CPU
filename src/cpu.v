@@ -41,6 +41,10 @@ module cpu(
   reg [31:0] mem_a_reg;
   reg [7:0] mem_dout_reg;
 
+  assign mem_wr = mem_wr_reg;
+  assign mem_a = mem_a_reg;
+  assign mem_dout = mem_dout_reg;
+
   // decoder outports wire
   wire                 	decoder_to_if;
   wire                 	decoder_to_rs;
@@ -310,7 +314,7 @@ module cpu(
   );
 
   always@(*)begin
-    if (lsb_to_if) begin
+    if (!lsb_to_if) begin
       mem_wr_reg = u_IF.mem_wr;
       mem_a_reg = u_IF.mem_a;
     end else begin
@@ -318,6 +322,12 @@ module cpu(
       mem_a_reg = u_Lsb.mem_a;
       mem_dout_reg = u_Lsb.mem_dout;
     end
+  end
+
+  always @(posedge clk_in) begin
+    // mem_wr_reg <= 1;
+    // mem_a_reg <= 32'h30004;
+    // mem_dout_reg <= 8'h0;
   end
 
 endmodule
