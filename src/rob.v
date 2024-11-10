@@ -12,7 +12,6 @@ module rob#(parameter ROB_WIDTH = 4,
             input rdy_in,
             input from_decoder,
             input from_rs,
-            input [RS_WIDTH-1:0] from_rs_index,
             input [ROB_WIDTH-1:0] from_rs_tag,
             input [2:0] from_rs_op,
             input [4:0] from_rs_rd,
@@ -32,7 +31,6 @@ module rob#(parameter ROB_WIDTH = 4,
             output reg [31:0] to_if_pc);
     reg [ROB_WIDTH-1:0] head;
     reg [ROB_WIDTH-1:0] tail;
-    reg [RS_WIDTH-1:0] rs_index[ROB_SIZE-1:0];
     reg ready[ROB_SIZE-1:0];
     reg [2:0] op[ROB_SIZE-1:0];
     reg [4:0] rd[ROB_SIZE-1:0];
@@ -54,7 +52,7 @@ module rob#(parameter ROB_WIDTH = 4,
                     if (ready[head]) begin
                         clear              <= 0;
                         to_rs_update       <= 1;
-                        to_rs_update_order <= rs_index[head];
+                        to_rs_update_order <= head;
                         to_rs_update_wdata <= wdata[head];
                         head               <= head + 1;
                         if (op[head] == `WRITE) begin
@@ -81,11 +79,13 @@ module rob#(parameter ROB_WIDTH = 4,
                 if (tail_tmp == head) begin
                     to_decoder <= 0;
                     to_rs      <= 0;
-                    end else if (from_decoder) begin
-                    to_decoder     <= 1;
-                    to_rs          <= 1;
-                    ready[tail]    <= 0;
-                    tail           <= tail +1;
+                end else begin
+                        to_rs          <= 1;
+                        if (from_decoder) begin
+                        to_decoder     <= 1;
+                        ready[tail]    <= 0;
+                        tail           <= tail +1;
+                    end
                 end
                 
                 if (from_rs) begin
@@ -94,7 +94,6 @@ module rob#(parameter ROB_WIDTH = 4,
                     rd[from_rs_tag]       <= from_rs_rd;
                     wdata[from_rs_tag]    <= from_rs_wdata;
                     jump[from_rs_tag]     <= from_rs_jump;
-                    rs_index[from_rs_tag] <= from_rs_index;
                 end
             end
         end

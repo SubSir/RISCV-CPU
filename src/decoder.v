@@ -77,7 +77,9 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                 to_rs  <= 0;
                 to_lsb <= 0;
                 to_rob <= 0;
-                rob_tag <= 0;
+                if (rst_in || clear) begin
+                    rob_tag <= 0;
+                end
                 if (from_rob && from_rs && from_lsb) begin
                     to_if <= 1;
                     end else begin

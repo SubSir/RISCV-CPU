@@ -83,7 +83,6 @@ module rs#(parameter ROB_WIDTH = 4,
     
     reg busy [0:RS_SIZE-1];
     reg cal [0:RS_SIZE-1];
-    reg commited [0:RS_SIZE-1];
     reg [5:0] op [0:RS_SIZE-1];
     reg [2:0] op_rob [0:RS_SIZE-1];
     reg [3:0] op_lsb [0:RS_SIZE-1];
@@ -98,8 +97,8 @@ module rs#(parameter ROB_WIDTH = 4,
     reg [31:0] pc [0:RS_SIZE-1];
     reg alu_double[0:RS_SIZE-1]; // 0 单次 1 双次
     reg [ROB_WIDTH-1:0] rob_tag [0:RS_SIZE-1];
-    reg  reorder_busy [0:31];
-    reg [4:0] reorder [0:31];
+    reg reorder_busy [0:31];
+    reg [ROB_WIDTH-1:0] reorder [0:31];
     reg [4:0] reg_file_rs1;
     reg [4:0] reg_file_rs2;
     reg [RS_WIDTH:0] busy_cnt;
@@ -108,6 +107,7 @@ module rs#(parameter ROB_WIDTH = 4,
     reg rs1_use;
     reg rs2_use;
     reg break;
+    reg [4:0] update_rd;
 
     always @(posedge clk_in or posedge rst_in) begin
         if (rdy_in)begin
@@ -121,24 +121,31 @@ module rs#(parameter ROB_WIDTH = 4,
                 to_reg_file_rs2_flag <= 0;
                 to_decoder  <= 1;
                 busy_cnt    <= 0;
+                for (i=0; i < 32; i = i + 1) begin
+                    reorder_busy[i] <= 0;
+                end
                 end else begin
                 to_reg_file_rs1_flag <= 0;
                 to_reg_file_rs2_flag <= 0;
                 to_decoder <= (busy_cnt < RS_SIZE);
                 if (from_rob_update) begin
                     for(i = 0; i < RS_SIZE; i = i + 1)begin
-                        if (busy[i] && qj[i] == from_rob_update_order)begin
+                        if (busy[i] && !vj_ready[i] && qj[i] == from_rob_update_order) begin
                             vj[i]    <= from_rob_update_wdata;
                             vj_ready[i] <= 1;
                         end
                         
-                        if (busy[i] && qk[i] == from_rob_update_order)begin
+                        if (busy[i] && !vk_ready[i] && qk[i] == from_rob_update_order) begin
                             vk[i]    <= from_rob_update_wdata;
                             vk_ready[i] <= 1;
                         end
                     end
-                    busy[from_rob_update_order]             <= 0;
-                    reorder_busy[rd[from_rob_update_order]] <= 0;
+                    for (i = 0; i < 32; i = i + 1) begin
+                        if (reorder_busy[i] && reorder[i] == from_rob_update_order) begin
+                            update_rd = i;
+                            reorder_busy[i] <= 0;
+                        end
+                    end
                 end
                 
                 
@@ -150,7 +157,6 @@ module rs#(parameter ROB_WIDTH = 4,
                             busy[i]     <= 1;
                             busy_cnt    <= busy_cnt + 1;
                             cal[i]      <= 0;
-                            commited[i] <= 0;
                             rd[i]       <= from_decoder_rd;
                             rd_use  = 1;
                             rs1_use = 1;
@@ -327,10 +333,10 @@ module rs#(parameter ROB_WIDTH = 4,
                             
                             if (rs1_use == 1) begin
                                 vj_ready[i] <= 0;
-                                if (reorder_busy[from_decoder_rs1]) begin
-                                    qj[i] <= reorder[from_decoder_rs1];
-                                    end else if (from_rob_update && rd[from_rob_update_order] == from_decoder_rs1) begin
+                                if (from_rob_update && update_rd == from_decoder_rs1) begin
                                     qj[i] <= from_rob_update_wdata;
+                                    end else if (reorder_busy[from_decoder_rs1]) begin
+                                    qj[i] <= reorder[from_decoder_rs1];
                                     end else begin
                                     to_reg_file_rs1_flag     <= 1;
                                     to_reg_file_index  <= i;
@@ -343,10 +349,10 @@ module rs#(parameter ROB_WIDTH = 4,
                             
                             if (rs2_use == 1) begin
                                 vk_ready[i] <= 0;
-                                if (reorder_busy[from_decoder_rs2]) begin
-                                    qk[i] <= reorder[from_decoder_rs2];
-                                    end else if (from_rob_update && rd[from_rob_update_order] == from_decoder_rs2) begin
+                                if (from_rob_update && update_rd == from_decoder_rs2) begin
                                     qk[i] <= from_rob_update_wdata;
+                                    end else if (reorder_busy[from_decoder_rs2]) begin
+                                    qk[i] <= reorder[from_decoder_rs2];
                                     end else begin
                                     to_reg_file_rs2_flag     <= 1;
                                     to_reg_file_index  <= i;
@@ -359,7 +365,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             
                             if (rd_use == 1) begin
                                 reorder_busy[from_decoder_rd] <= 1;
-                                reorder[from_decoder_rd]      <= i;
+                                reorder[from_decoder_rd]      <= from_decoder_tag;
                             end
                         end
                     end
@@ -368,7 +374,7 @@ module rs#(parameter ROB_WIDTH = 4,
                 to_rob <= 0;
                 if (from_alu && from_rob) begin
                     if (alu_double[from_alu_index] == 0)begin
-                        commited[from_alu_index] <= 1;
+                        busy[from_alu_index] <= 0;
                         to_rob              <= 1;
                         to_rob_index        <= from_alu_index;
                         to_rob_tag          <= rob_tag[from_alu_index];
@@ -397,7 +403,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             to_alu_a              <= imm[from_alu_index];
                             to_alu_b              <= pc[from_alu_index];
                             end else begin
-                            commited[from_alu_index] <= 1;
+                            busy[from_alu_index] <= 0;
                             to_rob              <= 1;
                             to_rob_index        <= from_alu_index;
                             to_rob_tag          <= rob_tag[from_alu_index];

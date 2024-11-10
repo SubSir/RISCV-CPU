@@ -263,7 +263,6 @@ module cpu(
     .rdy_in            ( rdy_in            ),
     .from_decoder      ( decoder_to_rob      ),
     .from_rs           ( rs_to_rob           ),
-    .from_rs_index     ( rs_to_rob_index     ),
     .from_rs_tag       ( rs_to_rob_tag       ),
     .from_rs_op        ( rs_to_rob_op        ),
     .from_rs_rd        ( rs_to_rob_rd        ),
