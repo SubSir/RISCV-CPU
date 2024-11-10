@@ -20,7 +20,6 @@ module rob#(parameter ROB_WIDTH = 4,
             input [31:0] from_rs_jump,
             output reg clear,
             output reg to_decoder,
-            output reg [ROB_WIDTH-1:0] to_decoder_tag,
             output reg to_reg_file,
             output reg [4:0] to_reg_file_rd,
             output reg [31:0] to_reg_file_wdata,
@@ -39,13 +38,13 @@ module rob#(parameter ROB_WIDTH = 4,
     reg [4:0] rd[ROB_SIZE-1:0];
     reg [31:0] wdata[ROB_SIZE-1:0];
     reg [31:0] jump[ROB_SIZE-1:0];
+    reg [ROB_WIDTH-1:0] tail_tmp;
     always @(posedge clk_in or posedge rst_in)begin
         if (rdy_in) begin
             if (rst_in || clear) begin
                 head           <= 0;
                 tail           <= 0;
                 to_decoder     <= 1;
-                to_decoder_tag <= 0;
                 to_lsb         <= 0;
                 to_rs          <= 0;
                 to_rs_update   <= 0;
@@ -62,30 +61,30 @@ module rob#(parameter ROB_WIDTH = 4,
                             to_reg_file       <= 1;
                             to_reg_file_rd    <= rd[head];
                             to_reg_file_wdata <= wdata[head];
-                            end else if (op[head] == `JUMP)begin
+                            end else if (op[head] == `JUMP) begin
                             clear    <= 1;
                             to_if_pc <= jump[head];
-                            end else if (op[head] == `BOTH)begin
+                            end else if (op[head] == `BOTH) begin
                             to_reg_file       <= 1;
                             to_reg_file_rd    <= rd[head];
                             to_reg_file_wdata <= wdata[head];
                             clear             <= 1;
                             to_if_pc          <= jump[head];
-                            end else if (op[head] == `LS)begin
+                            end else if (op[head] == `LS) begin
                             to_lsb     <= 1;
                             to_lsb_tag <= head;
                         end
                     end
                 end
-                
-                if (tail +2 == head) begin
+
+                tail_tmp = tail + 2;
+                if (tail_tmp == head) begin
                     to_decoder <= 0;
                     to_rs      <= 0;
-                    end else begin
+                    end else if (from_decoder) begin
                     to_decoder     <= 1;
                     to_rs          <= 1;
                     ready[tail]    <= 0;
-                    to_decoder_tag <= tail;
                     tail           <= tail +1;
                 end
                 

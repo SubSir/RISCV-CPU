@@ -1,11 +1,11 @@
-`define LB 3'b000
-`define LBU 3'b001
-`define LH 3'b010
-`define LHU 3'b011
-`define LW 3'b100
-`define SB 3'b101
-`define SH 3'b110
-`define SW 3'b111
+`define lsb_LB 3'b000
+`define lsb_LBU 3'b001
+`define lsb_LH 3'b010
+`define lsb_LHU 3'b011
+`define lsb_LW 3'b100
+`define lsb_SB 3'b101
+`define lsb_SH 3'b110
+`define lsb_SW 3'b111
 
 module Lsb#(parameter LSB_SIZE = 4,
             parameter LSB_WIDTH = 2,
@@ -43,11 +43,12 @@ module Lsb#(parameter LSB_SIZE = 4,
     reg [3:0] op[0:LSB_SIZE-1];
     reg [31:0] wdata[0:LSB_SIZE-1];
     reg [31:0] address[0:LSB_SIZE-1];
-    reg [1:0] remain;
+    reg [2:0] remain;
     reg [7:0] load_data[0:3];
     reg [7:0] store_data[0:3];
     integer i;
     reg next;
+    reg bubble;
     reg [LSB_WIDTH-1:0] head_tmp;
     always @(posedge clk_in or posedge rst_in)begin
         if (rdy_in) begin
@@ -92,61 +93,67 @@ module Lsb#(parameter LSB_SIZE = 4,
                 
                 to_rob <= 0;
                 if (to_if) begin
-                    load_data[remain] <= mem_din;
-                    mem_dout          <= store_data[remain];
-                    if (remain != 2'b00) begin
+                    if (!bubble)begin
+                        load_data[remain] <= mem_din;
+                        mem_dout          <= store_data[remain];
+                    end else begin
+                        bubble <= 0;
+                    end
+                    if (remain != 3'b00) begin
                         mem_a  <= mem_a + 32'd4;
-                        remain <= remain - 2'b01;
+                        remain <= remain - 3'b1;
                         end else begin
                         next     = 1;
                         to_rob <= 1;
                         to_rob_rd <= rd[head];
-                        if (op[head] == `LB) begin
-                            to_rob_data <= {{24{load_data[0][7]}}, load_data[0]};
-                            end else if (op[head] == `LBU) begin
-                            to_rob_data <= {24'h000000, load_data[0]};
-                            end else if (op[head] == `LH) begin
-                            to_rob_data <= {{16{load_data[0][15]}}, load_data[1], load_data[0]};
-                            end else if (op[head] == `LHU) begin
-                            to_rob_data <= {16'h0000, load_data[1], load_data[0]};
-                            end else if (op[head] == `LW) begin
-                            to_rob_data <= {load_data[3], load_data[2], load_data[1], load_data[0]};
+                        if (op[head] == `lsb_LB) begin
+                            to_rob_data <= {{24{mem_din[7]}}, mem_din};
+                            end else if (op[head] == `lsb_LBU) begin
+                            to_rob_data <= {24'h000000, mem_din};
+                            end else if (op[head] == `lsb_LH) begin
+                            to_rob_data <= {{16{mem_din[7]}}, mem_din, load_data[1]};
+                            end else if (op[head] == `lsb_LHU) begin
+                            to_rob_data <= {16'h0000, mem_din, load_data[1]};
+                            end else if (op[head] == `lsb_LW) begin
+                            to_rob_data <= {mem_din, load_data[1], load_data[2], load_data[3]};
                         end
                     end
                 end
                 
-                 head_tmp = head + next;
-                if (!to_if || remain == 2'b00) begin
+                head_tmp = head + next;
+                if (!to_if || remain == 3'b0) begin
                     head <= head_tmp;
                     if (head_tmp == tail) begin
                         to_if <= 0;
                         end else begin
                         to_if <= 1;
+                        bubble <= 1;
                         mem_a <= address[head_tmp];
                         if (op[head_tmp] == `LB || op[head_tmp] == `LBU) begin
-                            remain <= 2'b00;
+                            remain <= 3'd1;
                             mem_wr <= 0;
                             end else if (op[head_tmp] == `LH | op[head_tmp] == `LHU) begin
-                            remain <= 2'b01;
+                            remain <= 3'd2;
                             mem_wr <= 0;
                             end else if (op[head_tmp] == `LW) begin
-                            remain <= 2'b11;
+                            remain <= 3'd4;
                             mem_wr <= 0;
                             end else if (execute[head_tmp] && op[head_tmp] == `SB) begin
-                            remain        <= 2'b00;
+                            remain        <= 3'd1;
                             store_data[0] <= wdata[head_tmp][7:0];
                             end else if (execute[head_tmp] && op[head_tmp] == `SH) begin
-                            remain        <= 2'b01;
+                            remain        <= 3'd2;
                             store_data[0] <= wdata[head_tmp][15:8];
                             store_data[1] <= wdata[head_tmp][7:0];
                             end else if (execute[head_tmp] && op[head_tmp] == `SW) begin
-                            remain        <= 2'b11;
+                            remain        <= 3'd4;
                             store_data[0] <= wdata[head_tmp][31:24];
                             store_data[1] <= wdata[head_tmp][23:16];
                             store_data[2] <= wdata[head_tmp][15:8];
                             store_data[3] <= wdata[head_tmp][7:0];
                             end else begin
                             to_if <= 0;
+                            bubble <= 0;
                         end
                     end
                 end

@@ -7,6 +7,7 @@ module IF #(parameter IF_WIDTH = 2,
             input [7:0] mem_din,
             input from_lsb,
             input [31:0]from_rob_jump,
+            input from_decoder,
             output reg mem_wr,
             output reg [31:0] mem_a,
             output reg to_decoder,
@@ -50,10 +51,10 @@ module IF #(parameter IF_WIDTH = 2,
                             remain <= remain -3'b1;
                             end else begin
                             next = 1;
-                            ins[tail]    <= {load_data[3], load_data[2], load_data[1], mem_din};
-                            ins_pc[tail] <= pc + 32'd16;
+                            ins[tail]    <= {mem_din, load_data[1], load_data[2], load_data[3]};
+                            ins_pc[tail] <= pc + 32'd4;
                             pc           <= pc + 32'd4;
-                            pc_tmp = pc+32'd4;
+                            pc_tmp = pc + 32'd4;
                         end
                     end
                     
@@ -71,7 +72,7 @@ module IF #(parameter IF_WIDTH = 2,
                     end
                 end
                 
-                if (head == tail) begin
+                if (head == tail || !from_decoder) begin
                     to_decoder <= 0;
                     end else begin
                     to_decoder     <= 1;

@@ -36,7 +36,7 @@
 `define AUIPC 6'b100011
 `define LUI 6'b100100
 
-module Decoder #(parameter ROB_WIDTH = 4)
+module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                 (input rst_in,
                  input clk_in,
                  input rdy_in,
@@ -47,7 +47,6 @@ module Decoder #(parameter ROB_WIDTH = 4)
                  input from_rob,                       // rob 有剩余为1
                  input from_rs,                        // rs 有剩余为1
                  input from_lsb,                       // lsb 有剩余为1
-                 input [ROB_WIDTH-1:0]from_rob_tag,
                  output reg to_if,
                  output reg to_rs,
                  output reg [5:0]to_rs_op,
@@ -71,29 +70,30 @@ module Decoder #(parameter ROB_WIDTH = 4)
     wire[4:0] rd     = instruction[11:7];
     wire[4:0] rs1    = instruction[19:15];
     wire[4:0] rs2    = instruction[24:20];
+    reg [ROB_WIDTH-1:0] rob_tag;
     always @(posedge clk_in or negedge rst_in) begin
         if (rdy_in) begin
             if (rst_in | clear | !from_if | !from_rob | !from_rs | !from_lsb) begin
                 to_rs  <= 0;
                 to_lsb <= 0;
                 to_rob <= 0;
-                if (from_rob) begin
+                rob_tag <= 0;
+                if (from_rob && from_rs && from_lsb) begin
                     to_if <= 1;
                     end else begin
                     to_if <= 0;
                 end
                 end else begin
-                $display("decoder: to_rs");
                 to_rs      <= 1;
                 to_lsb     <= 0;
-                to_rob     <= 1;
                 to_lsb_rd  <= rd;
                 to_rs_rd   <= rd;
                 to_lsb_rs1 <= rs1;
                 to_rs_rs1  <= rs1;
                 to_rs_rs2  <= rs2;
-                to_rs_tag  <= from_rob_tag;
-                to_lsb_tag <= from_rob_tag;
+                to_rs_tag  <= rob_tag;
+                to_lsb_tag <= rob_tag;
+                rob_tag <= rob_tag + 1;
                 to_rs_pc   <= pc;
                 if (opcode == 7'b0110011 && func3 == 3'b000 && func7 == 7'b0000000) begin
                     // ADD
