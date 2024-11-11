@@ -35,21 +35,66 @@ module ALU #(parameter ROB_WIDTH = 4, parameter RS_WIDTH = 2)
             to_rs <= 1'b1;
             to_rs_index <= from_rs_index;
             case (alu_op)
-                `alu_ADD: result  <= a + b;
-                `alu_SUB: result  <= a - b;
-                `alu_AND: result  <= a & b;
-                `alu_OR: result   <= a | b;
-                `alu_XOR: result  <= a ^ b;
-                `alu_SLL: result  <= a << b[4:0];
-                `alu_SRL: result  <= a >> b[4:0];
-                `alu_SRA: result  <= a >>> b[4:0];
-                `alu_SLT: result  <= (a < b) ? 32'b1 : 32'b0;
-                `alu_SLTU: result <= ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0;
-                `alu_BEQ: result  <= (a == b)? 32'b1 : 32'b0;
-                `alu_BGE: result  <= (a >= b)? 32'b1 : 32'b0;
-                `alu_BGEU: result  <= ($unsigned(a) >= $unsigned(b))? 32'b1 : 32'b0;
-                `alu_BNE: result  <= (a != b)? 32'b1 : 32'b0;
-                `alu_ADD_pc: result <= a + b-32'd4;
+                `alu_ADD: begin
+                    result  <= a + b;
+                    $display("0 LOG2 A5 a: %d b: %d op: add result: %d", a, b, a + b);
+                end 
+                `alu_SUB: begin
+                    result  <= a - b;
+                    $display("0 LOG2 A5 a: %d b: %d op: sub result: %d", a, b, a - b);
+                end
+                `alu_AND: begin
+                    result  <= a & b;
+                    $display("0 LOG2 A5 a: %d b: %d op: and result: %d", a, b, a & b);
+                end
+                `alu_OR: begin
+                    result   <= a | b;
+                    $display("0 LOG2 A5 a: %d b: %d op: or result: %d", a, b, a | b);
+                end
+                `alu_XOR: begin
+                    result  <= a ^ b;
+                    $display("0 LOG2 A5 a: %d b: %d op: xor result: %d", a, b, a ^ b);
+                end
+                `alu_SLL: begin
+                    result  <= a << b[4:0];
+                    $display("0 LOG2 A5 a: %d b: %d op: sll result: %d", a, b, a << b[4:0]);
+                end
+                `alu_SRL: begin
+                    result  <= a >> b[4:0];
+                    $display("0 LOG2 A5 a: %d b: %d op: srl result: %d", a, b, a >> b[4:0]);
+                end
+                `alu_SRA: begin
+                    result  <= a >>> b[4:0];
+                    $display("0 LOG2 A5 a: %d b: %d op: sra result: %d", a, b, a >>> b[4:0]);
+                end
+                `alu_SLT: begin
+                    result  <= (a < b) ? 32'b1 : 32'b0;
+                    $display("0 LOG2 A5 a: %d b: %d op: slt result: %d", a, b, (a < b) ? 32'b1 : 32'b0);
+                end
+                `alu_SLTU: begin
+                    result <= ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0;
+                    $display("0 LOG2 A5 a: %d b: %d op: sltu result: %d", a, b, ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0);
+                end
+                `alu_BEQ: begin
+                    result  <= (a == b)? 32'b1 : 32'b0;
+                    $display("0 LOG2 A5 a: %d b: %d op: beq result: %d", a, b, (a == b)? 32'b1 : 32'b0);
+                end
+                `alu_BGE: begin
+                    result  <= (a >= b)? 32'b1 : 32'b0;
+                    $display("0 LOG2 A5 a: %d b: %d op: bge result: %d", a, b, (a >= b)? 32'b1 : 32'b0);
+                end
+                `alu_BGEU: begin
+                    result  <= ($unsigned(a) >= $unsigned(b))? 32'b1 : 32'b0;
+                    $display("0 LOG2 A5 a: %d b: %d op: bgeu result: %d", a, b, ($unsigned(a) >= $unsigned(b))? 32'b1 : 32'b0);
+                end
+                `alu_BNE: begin
+                    result  <= (a != b)? 32'b1 : 32'b0;
+                    $display("0 LOG2 A5 a: %d b: %d op: bne result: %d", a, b, (a != b)? 32'b1 : 32'b0);
+                end
+                `alu_ADD_pc: begin
+                    result <= a + b-32'd4;
+                    $display("0 LOG2 A5 a: %d b: %d op: add_pc result: %h", a, b, a + b-32'd4);
+                end
             endcase
         end
     end

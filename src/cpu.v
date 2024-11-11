@@ -59,7 +59,7 @@ module cpu(
   wire [ROB_WIDTH-1:0] 	decoder_to_lsb_tag;
   wire                 	decoder_to_rob;
 
-  // decoder outports wire
+  // if outports wire
   // wire        	mem_wr;
   // wire [31:0] 	mem_a;
   wire        	if_to_decoder;
@@ -168,12 +168,12 @@ module cpu(
     .mem_din        	( mem_din         ),
     .from_lsb       	( lsb_to_if        ),
     .from_rob_jump  	( rob_to_if_pc   ),
+    .from_decoder  	  ( decoder_to_if      ),
     // .mem_wr         	( mem_wr          ),
     // .mem_a          	( mem_a           ),
     .to_decoder     	( if_to_decoder      ),
     .to_decoder_ins 	( if_to_decoder_ins  ),
-    .to_decoder_pc  	( if_to_decoder_pc   ),
-    .from_decoder  	  ( decoder_to_if      )
+    .to_decoder_pc  	( if_to_decoder_pc   )
   );
     
   ALU #(

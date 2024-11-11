@@ -169,6 +169,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             op_rob[i]     <= `WRITE_rob;
                             rob_tag[i]    <= from_decoder_tag;
                             op_lsb[i]     <= `LB_lsb;
+                            pc[i]         <= from_decoder_pc;
                             if (from_decoder_op == `ADD) begin
                                 $display("0 CLNT R1 index: %d, ADD, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `ADD_alu;
@@ -285,7 +286,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                 op_lsb[i] <= `LW_lsb;
                                 rob_ready[i] <= 0;
                                 end else if (from_decoder_op == `SB) begin
-                                $display("0 CLNT R1 index: %d, SB, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
+                                $display("0 CLNT R1 index: %d, SB, rs1: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rd_use = 0;
                                 imm[i]    <= from_decoder_imm;
@@ -293,7 +294,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                 op_lsb[i] <= `SB_lsb;
                                 rob_ready[i] <= 1;
                                 end else if (from_decoder_op == `SH) begin
-                                $display("0 CLNT R1 index: %d, SH, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
+                                $display("0 CLNT R1 index: %d, SH, rs1: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rd_use = 0;
                                 imm[i]    <= from_decoder_imm;
@@ -301,7 +302,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                 op_lsb[i] <= `SH_lsb;
                                 rob_ready[i] <= 1;
                                 end else if (from_decoder_op == `SW) begin
-                                $display("0 CLNT R1 index: %d, SW, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
+                                $display("0 CLNT R1 index: %d, SW, rs1: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rd_use = 0;
                                 imm[i]    <= from_decoder_imm;
@@ -428,7 +429,7 @@ module rs#(parameter ROB_WIDTH = 4,
             
                 to_rob <= 0;
                 to_lsb <= 0;
-                if (from_alu && from_rob) begin
+                if (from_alu) begin
                     if (alu_double[from_alu_index] == 0)begin
                         busy[from_alu_index] <= 0;
                         busy_cnt_tmp = busy_cnt_tmp - 1;
@@ -439,12 +440,16 @@ module rs#(parameter ROB_WIDTH = 4,
                         to_rob_rd           <= rd[from_alu_index];
                         if (op_rob[from_alu_index] == `WRITE_rob) begin
                             to_rob_wdata <= from_alu_result;
+                            $display("0 SNAP R1 index: %d, WRITE tag: %d, rd: %d, wdata: %d", from_alu_index, rob_tag[from_alu_index], rd[from_alu_index], from_alu_result);
                             end else if (op_rob[from_alu_index] == `JUMP_rob) begin
                             to_rob_jump <= from_alu_result;
+                            $display("0 SNAP R1 index: %d, JUMP tag: %d, jump: %h", from_alu_index, rob_tag[from_alu_index], from_alu_result);
                             end else if (op_rob[from_alu_index] == `BOTH_rob) begin
+                            $display("0 SNAP R1 index: %d, BOTH tag: %d, rd: %d, wdata: %h, jump: %h", from_alu_index, rob_tag[from_alu_index], rd[from_alu_index], pc[from_alu_index], from_alu_result);
                             to_rob_wdata <= pc[from_alu_index];
                             to_rob_jump  <= from_alu_result;
                             end else if (op_rob[from_alu_index] == `LS_rob) begin
+                            $display("0 SNAP R1 index: %d, LS tag: %d, address: %h, wdata: %d", from_alu_index, rob_tag[from_alu_index], from_alu_result, vk[from_alu_index]);
                             to_lsb         <= 1;
                             to_lsb_op      <= op_lsb[from_alu_index];
                             to_lsb_tag     <= rob_tag[from_alu_index];
@@ -495,7 +500,6 @@ module rs#(parameter ROB_WIDTH = 4,
                             end else begin
                             to_alu_b <= vk[i];
                         end
-                        to_alu_b  <= vk[i];
                         to_alu_op <= op[i];
                         cal[i]    <= 1; // 用作alu
                     end

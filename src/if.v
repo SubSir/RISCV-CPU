@@ -24,12 +24,14 @@ module IF #(parameter IF_WIDTH = 2,
     reg next;
     reg [31:0] pc_tmp;
     reg [IF_WIDTH-1:0] tail_tmp;
+    reg bubble;
+    reg [31:0] tmp_mem_a;
     always @(posedge clk_in or posedge rst_in)begin
         if (rdy_in) begin
             if (rst_in || clear) begin
                 head       <= 0;
                 tail       <= 0;
-                remain     <= 2'b00;
+                remain     <= 3'b00;
                 loading    <= 0;
                 to_decoder <= 0;
                 if (rst_in) begin
@@ -39,9 +41,10 @@ module IF #(parameter IF_WIDTH = 2,
                     pc      <= from_rob_jump;
                 end
                 end else begin
-                if (!from_lsb) begin
+                bubble <= from_lsb;
+                if (!from_lsb && !bubble) begin
                     next   = 0;
-                    pc_tmp = pc;
+                    pc_tmp = pc; 
                     if (loading) begin
                         if (remain != 3'd4) begin
                             load_data[remain] <= mem_din;
@@ -70,6 +73,8 @@ module IF #(parameter IF_WIDTH = 2,
                             loading <= 0;
                         end
                     end
+                end else if (from_lsb && !bubble) begin
+                    loading <= 0;
                 end
                 
                 if (head == tail || !from_decoder) begin

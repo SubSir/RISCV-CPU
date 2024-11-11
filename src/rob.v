@@ -80,7 +80,7 @@ module rob#(parameter ROB_WIDTH = 4,
                             clear             <= 1;
                             to_if_pc          <= jump[head];
                             end else if (op[head] == `LS) begin
-                            $display("0 CMIT R2 LS tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
+                            $display("0 CMIT R2 LS tag: %d", head);
                             to_rs_update       <= 1;
                             to_lsb     <= 1;
                             to_lsb_tag <= head;

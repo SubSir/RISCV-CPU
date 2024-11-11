@@ -107,16 +107,20 @@ module Lsb#(parameter LSB_SIZE = 4,
                         next     = 1;
                         to_rob <= 1;
                         to_rob_tag <= tag[head];
-                        $display("0 TERM L3 to_rob_tag: %d", to_rob_tag);
                         if (op[head] == `lsb_LB) begin
+                            $display("0 TERM L3 LB tag: %d, data: %d", tag[head], {{24{mem_din[7]}}, mem_din});
                             to_rob_data <= {{24{mem_din[7]}}, mem_din};
                             end else if (op[head] == `lsb_LBU) begin
+                            $display("0 TERM L3 LBU tag: %d, data: %d", tag[head], {24'h000000, mem_din});
                             to_rob_data <= {24'h000000, mem_din};
                             end else if (op[head] == `lsb_LH) begin
+                            $display("0 TERM L3 LH tag: %d, data: %d", tag[head], {{16{mem_din[7]}}, mem_din, load_data[1]});
                             to_rob_data <= {{16{mem_din[7]}}, mem_din, load_data[1]};
                             end else if (op[head] == `lsb_LHU) begin
+                            $display("0 TERM L3 LHU tag: %d, data: %d", tag[head], {16'h0000, mem_din, load_data[1]});
                             to_rob_data <= {16'h0000, mem_din, load_data[1]};
                             end else if (op[head] == `lsb_LW) begin
+                            $display("0 TERM L3 LW tag: %d, data: %d", tag[head], {mem_din, load_data[1], load_data[2], load_data[3]});
                             to_rob_data <= {mem_din, load_data[1], load_data[2], load_data[3]};
                         end
                     end
@@ -132,30 +136,30 @@ module Lsb#(parameter LSB_SIZE = 4,
                         bubble <= 1;
                         mem_a <= address[head_tmp];
                         if (op[head_tmp] == `lsb_LB || op[head_tmp] == `lsb_LBU) begin
-                            $display("0 TERM L3 begin lb, address: %d", mem_a);
+                            $display("0 TERM L3 tag: %d, begin lb, address: %h", tag[head_tmp], address[head_tmp]);
                             remain <= 3'd1;
                             mem_wr <= 0;
                             end else if (op[head_tmp] == `lsb_LH | op[head_tmp] == `lsb_LHU) begin
-                            $display("0 TERM L3 begin lh, address: %d", mem_a);
+                            $display("0 TERM L3 tag: %d, begin lh, address: %h", tag[head_tmp], address[head_tmp]);
                             remain <= 3'd2;
                             mem_wr <= 0;
                             end else if (op[head_tmp] == `lsb_LW) begin
-                            $display("0 TERM L3 begin lw, address: %d", mem_a);
+                            $display("0 TERM L3 tag: %d, begin lw, address: %h", tag[head_tmp], address[head_tmp]);
                             remain <= 3'd4;
                             mem_wr <= 0;
                             end else if (execute[head_tmp] && op[head_tmp] == `lsb_SB) begin
-                            $display("0 TERM L3 begin sb, address: %d, wdata: %d", mem_a, wdata[head_tmp][7:0]);
+                            $display("0 TERM L3 tag: %d, begin sb, address: %h, wdata: %d", tag[head_tmp], address[head_tmp], wdata[head_tmp][7:0]);
                             remain        <= 3'd1;
                             store_data[0] <= wdata[head_tmp][7:0];
                             mem_wr <= 1;
                             end else if (execute[head_tmp] && op[head_tmp] == `lsb_SH) begin
-                            $display("0 TERM L3 begin sh, address: %d, wdata: %d", mem_a, wdata[head_tmp][15:8]);
+                            $display("0 TERM L3 tag: %d, begin sh, address: %h, wdata: %d", tag[head_tmp], address[head_tmp], wdata[head_tmp][15:8]);
                             remain        <= 3'd2;
                             store_data[0] <= wdata[head_tmp][15:8];
                             store_data[1] <= wdata[head_tmp][7:0];
                             mem_wr <= 1;
                             end else if (execute[head_tmp] && op[head_tmp] == `lsb_SW) begin
-                            $display("0 TERM L3 begin sw, address: %d, wdata: %d", mem_a, wdata[head_tmp]);
+                            $display("0 TERM L3 tag: %d, begin sw, address: %h, wdata: %d", tag[head_tmp], address[head_tmp], wdata[head_tmp]);
                             remain        <= 3'd4;
                             store_data[0] <= wdata[head_tmp][31:24];
                             store_data[1] <= wdata[head_tmp][23:16];
