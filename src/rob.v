@@ -12,11 +12,15 @@ module rob#(parameter ROB_WIDTH = 4,
             input rdy_in,
             input from_decoder,
             input from_rs,
+            input from_rs_ready,
             input [ROB_WIDTH-1:0] from_rs_tag,
             input [2:0] from_rs_op,
             input [4:0] from_rs_rd,
             input [31:0] from_rs_wdata,
             input [31:0] from_rs_jump,
+            input from_lsb,
+            input [ROB_WIDTH-1:0] from_lsb_tag,
+            input [31:0] from_lsb_wdata,
             output reg clear,
             output reg to_decoder,
             output reg to_reg_file,
@@ -26,7 +30,7 @@ module rob#(parameter ROB_WIDTH = 4,
             output reg [ROB_WIDTH-1:0] to_lsb_tag,
             output reg to_rs,
             output reg to_rs_update,
-            output reg [RS_WIDTH-1:0] to_rs_update_order,
+            output reg [ROB_WIDTH-1:0] to_rs_update_order,
             output reg [31:0] to_rs_update_wdata,
             output reg [31:0] to_if_pc);
     reg [ROB_WIDTH-1:0] head;
@@ -48,27 +52,36 @@ module rob#(parameter ROB_WIDTH = 4,
                 to_rs_update   <= 0;
                 clear          <= 0;
                 end else begin
-                if (head != tail)begin
+                to_lsb  <= 0;
+                to_reg_file       <= 0;
+                to_rs_update   <= 0;
+                if (head != tail) begin
                     if (ready[head]) begin
                         clear              <= 0;
-                        to_rs_update       <= 1;
                         to_rs_update_order <= head;
                         to_rs_update_wdata <= wdata[head];
                         head               <= head + 1;
                         if (op[head] == `WRITE) begin
+                            $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
+                            to_rs_update       <= 1;
                             to_reg_file       <= 1;
                             to_reg_file_rd    <= rd[head];
                             to_reg_file_wdata <= wdata[head];
                             end else if (op[head] == `JUMP) begin
+                            $display("0 CMIT R2 JUMP tag: %d, jump: %d", head, jump[head]);
                             clear    <= 1;
                             to_if_pc <= jump[head];
                             end else if (op[head] == `BOTH) begin
+                            $display("0 CMIT R2 BOTH tag: %d, rd: %d, wdata: %d, jump: %d", head, rd[head], wdata[head], jump[head]);
+                            to_rs_update       <= 1;
                             to_reg_file       <= 1;
                             to_reg_file_rd    <= rd[head];
                             to_reg_file_wdata <= wdata[head];
                             clear             <= 1;
                             to_if_pc          <= jump[head];
                             end else if (op[head] == `LS) begin
+                            $display("0 CMIT R2 LS tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
+                            to_rs_update       <= 1;
                             to_lsb     <= 1;
                             to_lsb_tag <= head;
                         end
@@ -89,11 +102,20 @@ module rob#(parameter ROB_WIDTH = 4,
                 end
                 
                 if (from_rs) begin
-                    ready[from_rs_tag]    <= 1;
+                    if (from_rs_op != `LS) begin
+                        ready[from_rs_tag]    <= 1;
+                    end else begin
+                        ready[from_rs_tag]    <= from_rs_ready;
+                    end
                     op[from_rs_tag]       <= from_rs_op;
                     rd[from_rs_tag]       <= from_rs_rd;
                     wdata[from_rs_tag]    <= from_rs_wdata;
                     jump[from_rs_tag]     <= from_rs_jump;
+                end
+
+                if (from_lsb) begin
+                    ready[from_lsb_tag] <= 1;
+                    wdata[from_lsb_tag] <= from_lsb_wdata;
                 end
             end
         end

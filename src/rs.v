@@ -54,7 +54,7 @@ module rs#(parameter ROB_WIDTH = 4,
            input [31:0] from_alu_result,
            input from_rob,
            input from_rob_update,
-           input [RS_WIDTH-1:0] from_rob_update_order,
+           input [ROB_WIDTH-1:0] from_rob_update_order,
            input [31:0] from_rob_update_wdata,
            output reg to_decoder,                     // 有剩余为 1
            output reg to_alu,
@@ -71,13 +71,13 @@ module rs#(parameter ROB_WIDTH = 4,
            output reg [RS_WIDTH-1:0]to_rob_index,
            output reg [ROB_WIDTH-1:0] to_rob_tag,
            output reg [2:0] to_rob_op,
+           output reg to_rob_ready,
            output reg [4:0] to_rob_rd,
            output reg [31:0] to_rob_wdata,
            output reg [31:0] to_rob_jump,
            output reg to_lsb,
            output reg [3:0]to_lsb_op,
            output reg [ROB_WIDTH-1:0]to_lsb_tag,
-           output reg [4:0]to_lsb_rd,
            output reg [31:0]to_lsb_wdata,
            output reg [31:0]to_lsb_address);
     
@@ -85,14 +85,15 @@ module rs#(parameter ROB_WIDTH = 4,
     reg cal [0:RS_SIZE-1];
     reg [5:0] op [0:RS_SIZE-1];
     reg [2:0] op_rob [0:RS_SIZE-1];
+    reg rob_ready [0:RS_SIZE-1];
     reg [3:0] op_lsb [0:RS_SIZE-1];
     reg [4:0] rd [0:RS_SIZE-1];
     reg vj_ready [0:RS_SIZE-1];
     reg [31:0] vj [0:RS_SIZE-1];
-    reg [4:0] qj [0:RS_SIZE-1];
+    reg [ROB_WIDTH-1:0] qj [0:RS_SIZE-1];
     reg vk_ready [0:RS_SIZE-1];
     reg [31:0] vk [0:RS_SIZE-1];
-    reg [4:0] qk [0:RS_SIZE-1];
+    reg [ROB_WIDTH-1:0] qk [0:RS_SIZE-1];
     reg [31:0] imm [0:RS_SIZE-1];
     reg [31:0] pc [0:RS_SIZE-1];
     reg alu_double[0:RS_SIZE-1]; // 0 单次 1 双次
@@ -102,6 +103,7 @@ module rs#(parameter ROB_WIDTH = 4,
     reg [4:0] reg_file_rs1;
     reg [4:0] reg_file_rs2;
     reg [RS_WIDTH:0] busy_cnt;
+    reg [RS_WIDTH:0] busy_cnt_tmp;
     integer i;
     reg rd_use;
     reg rs1_use;
@@ -148,14 +150,14 @@ module rs#(parameter ROB_WIDTH = 4,
                     end
                 end
                 
-                
+                busy_cnt_tmp = busy_cnt;
                 if (from_decoder) begin
                     break = 0;
                     for (i = 0; i < RS_SIZE; i = i + 1) begin
                         if (!busy[i] && !break) begin
                             break = 1;
                             busy[i]     <= 1;
-                            busy_cnt    <= busy_cnt + 1;
+                            busy_cnt_tmp    = busy_cnt_tmp + 1;
                             cal[i]      <= 0;
                             rd[i]       <= from_decoder_rd;
                             rd_use  = 1;
@@ -168,146 +170,194 @@ module rs#(parameter ROB_WIDTH = 4,
                             rob_tag[i]    <= from_decoder_tag;
                             op_lsb[i]     <= `LB_lsb;
                             if (from_decoder_op == `ADD) begin
+                                $display("0 CLNT R1 index: %d, ADD, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 end else if (from_decoder_op == `SUB) begin
+                                $display("0 CLNT R1 index: %d, SUB, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `SUB_alu;
                                 end else if (from_decoder_op == `AND) begin
+                                $display("0 CLNT R1 index: %d, AND, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `AND_alu;
                                 end else if (from_decoder_op == `OR) begin
+                                $display("0 CLNT R1 index: %d, OR, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `OR_alu;
                                 end else if (from_decoder_op == `XOR) begin
+                                $display("0 CLNT R1 index: %d, XOR, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `XOR_alu;
                                 end else if (from_decoder_op == `SLL) begin
+                                $display("0 CLNT R1 index: %d, SLL, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `SLL_alu;
                                 end else if (from_decoder_op == `SRL) begin
+                                $display("0 CLNT R1 index: %d, SRL, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `SRL_alu;
                                 end else if (from_decoder_op == `SRA) begin
+                                $display("0 CLNT R1 index: %d, SRA, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `SRA_alu;
                                 end else if (from_decoder_op == `SLT) begin
+                                $display("0 CLNT R1 index: %d, SLT, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `SLT_alu;
                                 end else if (from_decoder_op == `SLTU) begin
+                                $display("0 CLNT R1 index: %d, SLTU, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `SLTU_alu;
                                 end else if (from_decoder_op == `ADDI) begin
+                                $display("0 CLNT R1 index: %d, ADDI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `ANDI) begin
+                                $display("0 CLNT R1 index: %d, ANDI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `AND_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `ORI) begin
+                                $display("0 CLNT R1 index: %d, ORI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `OR_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `XORI) begin
+                                $display("0 CLNT R1 index: %d, XORI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `XOR_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `SLLI) begin
+                                $display("0 CLNT R1 index: %d, SLLI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `SLL_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `SRLI) begin
+                                $display("0 CLNT R1 index: %d, SRLI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `SRL_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `SRAI) begin
+                                $display("0 CLNT R1 index: %d, SRAI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `SRA_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `SLTI) begin
+                                $display("0 CLNT R1 index: %d, SLTI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `SLT_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `SLTIU) begin
+                                $display("0 CLNT R1 index: %d, SLTIU, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `SLTU_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `LB) begin
+                                $display("0 CLNT R1 index: %d, LB, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rs2_use = 0;
                                 vk[i]     <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `LB_lsb;
+                                rob_ready[i] <= 0;
                                 end else if (from_decoder_op == `LBU) begin
+                                $display("0 CLNT R1 index: %d, LBU, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rs2_use = 0;
                                 vk[i]     <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `LBU_lsb;
+                                rob_ready[i] <= 0;
                                 end else if (from_decoder_op == `LH) begin
+                                $display("0 CLNT R1 index: %d, LH, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rs2_use = 0;
                                 vk[i]     <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `LH_lsb;
+                                rob_ready[i] <= 0;
                                 end else if (from_decoder_op == `LHU) begin
+                                $display("0 CLNT R1 index: %d, LHU, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rs2_use = 0;
                                 vk[i]     <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `LHU_lsb;
+                                rob_ready[i] <= 0;
                                 end else if (from_decoder_op == `LW) begin
+                                $display("0 CLNT R1 index: %d, LW, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rs2_use = 0;
                                 vk[i]     <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `LW_lsb;
+                                rob_ready[i] <= 0;
                                 end else if (from_decoder_op == `SB) begin
+                                $display("0 CLNT R1 index: %d, SB, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rd_use = 0;
                                 imm[i]    <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `SB_lsb;
+                                rob_ready[i] <= 1;
                                 end else if (from_decoder_op == `SH) begin
+                                $display("0 CLNT R1 index: %d, SH, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rd_use = 0;
                                 imm[i]    <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `SH_lsb;
+                                rob_ready[i] <= 1;
                                 end else if (from_decoder_op == `SW) begin
+                                $display("0 CLNT R1 index: %d, SW, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rd_use = 0;
                                 imm[i]    <= from_decoder_imm;
                                 op_rob[i] <= `LS_rob;
                                 op_lsb[i] <= `SW_lsb;
+                                rob_ready[i] <= 1;
                                 end else if (from_decoder_op == `BEQ) begin
+                                $display("0 CLNT R1 index: %d, BEQ, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
                                 rd_use = 0;
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BEQ_alu;
                                 pc[i]         <= from_decoder_pc;
+                                imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BGE) begin
+                                $display("0 CLNT R1 index: %d, BGE, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
                                 rd_use = 0;
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BGE_alu;
                                 pc[i]         <= from_decoder_pc;
+                                imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BGEU) begin
+                                $display("0 CLNT R1 index: %d, BGEU, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
                                 rd_use = 0;
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BGEU_alu;
                                 pc[i]         <= from_decoder_pc;
+                                imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BLT) begin
+                                $display("0 CLNT R1 index: %d, BLT, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
                                 rd_use = 0;
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `SLT;
                                 pc[i]         <= from_decoder_pc;
+                                imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BLTU) begin
+                                $display("0 CLNT R1 index: %d, BLTU, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
                                 rd_use = 0;
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `SLTU;
                                 pc[i]         <= from_decoder_pc;
+                                imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BNE) begin
+                                $display("0 CLNT R1 index: %d, BNE, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
                                 rd_use = 0;
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BNE_alu;
                                 pc[i]         <= from_decoder_pc;
+                                imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `JAL) begin
+                                $display("0 CLNT R1 index: %d, JAL, rd: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_imm, from_decoder_pc);
                                 rs1_use = 0;
                                 rs2_use = 0;
                                 vj[i]     <= from_decoder_pc;
@@ -315,15 +365,18 @@ module rs#(parameter ROB_WIDTH = 4,
                                 op[i]     <= `ADD_alu_pc;
                                 op_rob[i] <= `BOTH_rob;
                                 end else if (from_decoder_op == `JALR) begin
+                                $display("0 CLNT R1 index: %d, JALR, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 rs2_use = 0;
                                 vk[i]     <= from_decoder_imm;
                                 op[i]     <= `ADD_alu_pc;
                                 op_rob[i] <= `BOTH_rob;
                                 end else if (from_decoder_op == `LUI)begin
+                                $display("0 CLNT R1 index: %d, LUI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `AUIPC)begin
+                                $display("0 CLNT R1 index: %d, AUIPC, rd: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu_pc;
                                 rs1_use = 0;
                                 rs2_use = 0;
@@ -334,7 +387,8 @@ module rs#(parameter ROB_WIDTH = 4,
                             if (rs1_use == 1) begin
                                 vj_ready[i] <= 0;
                                 if (from_rob_update && update_rd == from_decoder_rs1) begin
-                                    qj[i] <= from_rob_update_wdata;
+                                    vj[i] <= from_rob_update_wdata;
+                                    vj_ready[i] <= 1;
                                     end else if (reorder_busy[from_decoder_rs1]) begin
                                     qj[i] <= reorder[from_decoder_rs1];
                                     end else begin
@@ -350,7 +404,8 @@ module rs#(parameter ROB_WIDTH = 4,
                             if (rs2_use == 1) begin
                                 vk_ready[i] <= 0;
                                 if (from_rob_update && update_rd == from_decoder_rs2) begin
-                                    qk[i] <= from_rob_update_wdata;
+                                    vk[i] <= from_rob_update_wdata;
+                                    vk_ready[i] <= 1;
                                     end else if (reorder_busy[from_decoder_rs2]) begin
                                     qk[i] <= reorder[from_decoder_rs2];
                                     end else begin
@@ -372,9 +427,11 @@ module rs#(parameter ROB_WIDTH = 4,
                 end
             
                 to_rob <= 0;
+                to_lsb <= 0;
                 if (from_alu && from_rob) begin
                     if (alu_double[from_alu_index] == 0)begin
                         busy[from_alu_index] <= 0;
+                        busy_cnt_tmp = busy_cnt_tmp - 1;
                         to_rob              <= 1;
                         to_rob_index        <= from_alu_index;
                         to_rob_tag          <= rob_tag[from_alu_index];
@@ -393,7 +450,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             to_lsb_tag     <= rob_tag[from_alu_index];
                             to_lsb_address <= from_alu_result;
                             to_lsb_wdata   <= vk[from_alu_index];
-                            to_lsb_rd      <= rd[from_alu_index];
+                            to_rob_ready   <= rob_ready[from_alu_index];
                         end
                         end else begin
                         if (from_alu_result == 32'b1) begin
@@ -404,6 +461,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             to_alu_b              <= pc[from_alu_index];
                             end else begin
                             busy[from_alu_index] <= 0;
+                            busy_cnt_tmp = busy_cnt_tmp - 1;
                             to_rob              <= 1;
                             to_rob_index        <= from_alu_index;
                             to_rob_tag          <= rob_tag[from_alu_index];
@@ -411,6 +469,8 @@ module rs#(parameter ROB_WIDTH = 4,
                         end
                     end
                 end
+
+                busy_cnt <= busy_cnt_tmp;
                 
                 if (from_reg_file_rs1_flag)begin
                     vj_ready[from_reg_file_index] <= 1;

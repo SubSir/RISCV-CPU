@@ -56,10 +56,6 @@ module cpu(
   wire [31:0]          	decoder_to_rs_pc;
   wire [ROB_WIDTH-1:0] 	decoder_to_rs_tag;
   wire                 	decoder_to_lsb;
-  wire [31:0]          	decoder_to_lsb_op;
-  wire [4:0]           	decoder_to_lsb_rd;
-  wire [4:0]           	decoder_to_lsb_rs1;
-  wire [31:0]          	decoder_to_lsb_imm;
   wire [ROB_WIDTH-1:0] 	decoder_to_lsb_tag;
   wire                 	decoder_to_rob;
 
@@ -83,7 +79,7 @@ module cpu(
   wire          lsb_to_decoder;
   wire          lsb_to_rob;
   wire [31:0]   lsb_to_rob_data;
-  wire [4:0]    lsb_to_rob_rd;
+  wire [ROB_WIDTH-1:0]    lsb_to_rob_tag;
 
   // reg file outports wire
   wire regfile_to_rs_rs1_flag;
@@ -102,7 +98,7 @@ module cpu(
   wire [ROB_WIDTH-1:0] rob_to_lsb_tag;
   wire          rob_to_rs;
   wire          rob_to_rs_update;
-  wire [RS_WIDTH-1:0] rob_to_rs_update_order;
+  wire [ROB_WIDTH-1:0] rob_to_rs_update_order;
   wire [31:0]   rob_to_rs_update_wdata;
   wire [31:0]   rob_to_if_pc;
 
@@ -123,13 +119,13 @@ module cpu(
   wire [RS_WIDTH-1:0] rs_to_rob_index;
   wire [ROB_WIDTH-1:0] rs_to_rob_tag;
   wire [2:0]    rs_to_rob_op;
+  wire          rs_to_rob_ready;
   wire [4:0]    rs_to_rob_rd;
   wire [31:0]   rs_to_rob_wdata;
   wire [31:0]   rs_to_rob_jump;
   wire          rs_to_lsb;
   wire [3:0]    rs_to_lsb_op;
   wire [ROB_WIDTH-1:0]    rs_to_lsb_tag;
-  wire [4:0]    rs_to_lsb_rd;
   wire [31:0]   rs_to_lsb_wdata;
   wire [31:0]   rs_to_lsb_address;
 
@@ -157,10 +153,6 @@ module cpu(
     .to_rs_pc     	( decoder_to_rs_pc      ),
     .to_rs_tag    	( decoder_to_rs_tag     ),
     .to_lsb       	( decoder_to_lsb        ),
-    .to_lsb_op    	( decoder_to_lsb_op     ),
-    .to_lsb_rd    	( decoder_to_lsb_rd     ),
-    .to_lsb_rs1   	( decoder_to_lsb_rs1    ),
-    .to_lsb_imm   	( decoder_to_lsb_imm    ),
     .to_lsb_tag   	( decoder_to_lsb_tag    ),
     .to_rob       	( decoder_to_rob        )
   );
@@ -215,7 +207,6 @@ module cpu(
     .from_decoder_tag( decoder_to_lsb_tag),
     .from_rs         ( rs_to_lsb         ),
     .from_rs_op      ( rs_to_lsb_op     ),
-    .from_rs_rd      ( rs_to_lsb_rd      ),
     .from_rs_tag     ( rs_to_lsb_tag     ),
     .from_rs_wdata   ( rs_to_lsb_wdata   ),
     .from_rs_address ( rs_to_lsb_address ),
@@ -228,8 +219,8 @@ module cpu(
     .to_if           ( lsb_to_if           ),
     .to_decoder      ( lsb_to_decoder      ),
     .to_rob          ( lsb_to_rob          ),
-    .to_rob_data     ( lsb_to_rob_data     ),
-    .to_rob_rd       ( lsb_to_rob_rd       )
+    .to_rob_tag      ( lsb_to_rob_tag      ),
+    .to_rob_data     ( lsb_to_rob_data     )
   );
 
   RegisterFile #(
@@ -265,9 +256,13 @@ module cpu(
     .from_rs           ( rs_to_rob           ),
     .from_rs_tag       ( rs_to_rob_tag       ),
     .from_rs_op        ( rs_to_rob_op        ),
+    .from_rs_ready        ( rs_to_rob_ready        ),
     .from_rs_rd        ( rs_to_rob_rd        ),
     .from_rs_wdata     ( rs_to_rob_wdata     ),
     .from_rs_jump      ( rs_to_rob_jump      ),
+    .from_lsb          ( lsb_to_rob          ),
+    .from_lsb_tag       ( lsb_to_rob_tag       ),
+    .from_lsb_wdata   ( lsb_to_rob_data   ),
     .clear             ( clear             ),
     .to_decoder        ( rob_to_decoder        ),
     .to_reg_file       ( rob_to_reg_file       ),
@@ -326,13 +321,13 @@ module cpu(
     .to_rob_index        ( rs_to_rob_index        ),
     .to_rob_tag          ( rs_to_rob_tag          ),
     .to_rob_op           ( rs_to_rob_op           ),
+    .to_rob_ready           ( rs_to_rob_ready          ),
     .to_rob_rd           ( rs_to_rob_rd           ),
     .to_rob_wdata        ( rs_to_rob_wdata        ),
     .to_rob_jump         ( rs_to_rob_jump         ),
     .to_lsb              ( rs_to_lsb              ),
     .to_lsb_op           ( rs_to_lsb_op           ),
     .to_lsb_tag           ( rs_to_lsb_tag           ),
-    .to_lsb_rd           ( rs_to_lsb_rd           ),
     .to_lsb_wdata        ( rs_to_lsb_wdata        ),
     .to_lsb_address      ( rs_to_lsb_address      )
   );
