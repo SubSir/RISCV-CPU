@@ -37,63 +37,63 @@ module ALU #(parameter ROB_WIDTH = 4, parameter RS_WIDTH = 2)
             case (alu_op)
                 `alu_ADD: begin
                     result  <= a + b;
-                    $display("0 LOG2 A5 a: %d b: %d op: add result: %d", a, b, a + b);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: add result: %d", from_rs_index, a, b, a + b);
                 end 
                 `alu_SUB: begin
                     result  <= a - b;
-                    $display("0 LOG2 A5 a: %d b: %d op: sub result: %d", a, b, a - b);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: sub result: %d", from_rs_index, a, b, a - b);
                 end
                 `alu_AND: begin
                     result  <= a & b;
-                    $display("0 LOG2 A5 a: %d b: %d op: and result: %d", a, b, a & b);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: and result: %d", from_rs_index, a, b, a & b);
                 end
                 `alu_OR: begin
                     result   <= a | b;
-                    $display("0 LOG2 A5 a: %d b: %d op: or result: %d", a, b, a | b);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: or result: %d", from_rs_index, a, b, a | b);
                 end
                 `alu_XOR: begin
                     result  <= a ^ b;
-                    $display("0 LOG2 A5 a: %d b: %d op: xor result: %d", a, b, a ^ b);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: xor result: %d", from_rs_index, a, b, a ^ b);
                 end
                 `alu_SLL: begin
                     result  <= a << b[4:0];
-                    $display("0 LOG2 A5 a: %d b: %d op: sll result: %d", a, b, a << b[4:0]);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: sll result: %d", from_rs_index, a, b, a << b[4:0]);
                 end
                 `alu_SRL: begin
                     result  <= a >> b[4:0];
-                    $display("0 LOG2 A5 a: %d b: %d op: srl result: %d", a, b, a >> b[4:0]);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: srl result: %d", from_rs_index, a, b, a >> b[4:0]);
                 end
                 `alu_SRA: begin
                     result  <= a >>> b[4:0];
-                    $display("0 LOG2 A5 a: %d b: %d op: sra result: %d", a, b, a >>> b[4:0]);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: sra result: %d", from_rs_index, a, b, a >>> b[4:0]);
                 end
                 `alu_SLT: begin
                     result  <= (a < b) ? 32'b1 : 32'b0;
-                    $display("0 LOG2 A5 a: %d b: %d op: slt result: %d", a, b, (a < b) ? 32'b1 : 32'b0);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: slt result: %d", from_rs_index, a, b, (a < b) ? 32'b1 : 32'b0);
                 end
                 `alu_SLTU: begin
                     result <= ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0;
-                    $display("0 LOG2 A5 a: %d b: %d op: sltu result: %d", a, b, ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: sltu result: %d", from_rs_index, a, b, ($unsigned(a) < $unsigned(b)) ? 32'b1 : 32'b0);
                 end
                 `alu_BEQ: begin
                     result  <= (a == b)? 32'b1 : 32'b0;
-                    $display("0 LOG2 A5 a: %d b: %d op: beq result: %d", a, b, (a == b)? 32'b1 : 32'b0);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: beq result: %d", from_rs_index, a, b, (a == b)? 32'b1 : 32'b0);
                 end
                 `alu_BGE: begin
                     result  <= (a >= b)? 32'b1 : 32'b0;
-                    $display("0 LOG2 A5 a: %d b: %d op: bge result: %d", a, b, (a >= b)? 32'b1 : 32'b0);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: bge result: %d", from_rs_index, a, b, (a >= b)? 32'b1 : 32'b0);
                 end
                 `alu_BGEU: begin
                     result  <= ($unsigned(a) >= $unsigned(b))? 32'b1 : 32'b0;
-                    $display("0 LOG2 A5 a: %d b: %d op: bgeu result: %d", a, b, ($unsigned(a) >= $unsigned(b))? 32'b1 : 32'b0);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: bgeu result: %d", from_rs_index, a, b, ($unsigned(a) >= $unsigned(b))? 32'b1 : 32'b0);
                 end
                 `alu_BNE: begin
                     result  <= (a != b)? 32'b1 : 32'b0;
-                    $display("0 LOG2 A5 a: %d b: %d op: bne result: %d", a, b, (a != b)? 32'b1 : 32'b0);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: bne result: %d", from_rs_index, a, b, (a != b)? 32'b1 : 32'b0);
                 end
                 `alu_ADD_pc: begin
                     result <= a + b-32'd4;
-                    $display("0 LOG2 A5 a: %d b: %d op: add_pc result: %h", a, b, a + b-32'd4);
+                    $display("0 LOG2 A5 index: %d, a: %d b: %d op: add_pc result: %h", from_rs_index, a, b, a + b-32'd4);
                 end
             endcase
         end

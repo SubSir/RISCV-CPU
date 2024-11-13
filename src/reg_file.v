@@ -48,6 +48,7 @@ module RegisterFile #(parameter RS_WIDTH = 2)(input rst_in,
                     $display("0 LOG1 R4 rob write %d as %d", from_rob_rd, from_rob_wdata);
                     reg_file[from_rob_rd] <= from_rob_wdata;
                 end
+                reg_file[0] <= 32'b0;
             end
         end
     end

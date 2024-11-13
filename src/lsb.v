@@ -57,7 +57,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                 to_decoder <= 1;
                 to_rob     <= 0;
                 to_if      <= 0;
-                remain     <= 2'b00;
+                remain     <= 3'b00;
                 end else begin
 
                 to_decoder <= 1;
@@ -72,7 +72,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                     end
                 end
                 
-                if (from_rs)begin
+                if (from_rs) begin
                     for(i = head;i != tail;i = i + 1)begin
                         if (tag[i] == from_rs_tag) begin 
                             op[i]       <= from_rs_op;
@@ -94,33 +94,37 @@ module Lsb#(parameter LSB_SIZE = 4,
                 next = 0;
                 to_rob <= 0;
                 if (to_if) begin
+                    mem_dout          <= store_data[remain];
                     if (!bubble)begin
                         load_data[remain] <= mem_din;
-                        mem_dout          <= store_data[remain];
                     end else begin
                         bubble <= 0;
                     end
                     if (remain != 3'b00) begin
-                        mem_a  <= mem_a + 32'd4;
+                        mem_a  <= mem_a + 32'd1;
                         remain <= remain - 3'b1;
                         end else begin
                         next     = 1;
-                        to_rob <= 1;
                         to_rob_tag <= tag[head];
                         if (op[head] == `lsb_LB) begin
                             $display("0 TERM L3 LB tag: %d, data: %d", tag[head], {{24{mem_din[7]}}, mem_din});
+                            to_rob <= 1;
                             to_rob_data <= {{24{mem_din[7]}}, mem_din};
                             end else if (op[head] == `lsb_LBU) begin
                             $display("0 TERM L3 LBU tag: %d, data: %d", tag[head], {24'h000000, mem_din});
+                            to_rob <= 1;
                             to_rob_data <= {24'h000000, mem_din};
                             end else if (op[head] == `lsb_LH) begin
                             $display("0 TERM L3 LH tag: %d, data: %d", tag[head], {{16{mem_din[7]}}, mem_din, load_data[1]});
+                            to_rob <= 1;
                             to_rob_data <= {{16{mem_din[7]}}, mem_din, load_data[1]};
                             end else if (op[head] == `lsb_LHU) begin
                             $display("0 TERM L3 LHU tag: %d, data: %d", tag[head], {16'h0000, mem_din, load_data[1]});
+                            to_rob <= 1;
                             to_rob_data <= {16'h0000, mem_din, load_data[1]};
                             end else if (op[head] == `lsb_LW) begin
                             $display("0 TERM L3 LW tag: %d, data: %d", tag[head], {mem_din, load_data[1], load_data[2], load_data[3]});
+                            to_rob <= 1;
                             to_rob_data <= {mem_din, load_data[1], load_data[2], load_data[3]};
                         end
                     end
@@ -129,7 +133,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                 head_tmp = head + next;
                 if (!to_if || remain == 3'b0) begin
                     head <= head_tmp;
-                    if (head_tmp == tail) begin
+                    if (head_tmp == tail || !ready[head_tmp]) begin
                         to_if <= 0;
                         end else begin
                         to_if <= 1;
@@ -149,22 +153,22 @@ module Lsb#(parameter LSB_SIZE = 4,
                             mem_wr <= 0;
                             end else if (execute[head_tmp] && op[head_tmp] == `lsb_SB) begin
                             $display("0 TERM L3 tag: %d, begin sb, address: %h, wdata: %d", tag[head_tmp], address[head_tmp], wdata[head_tmp][7:0]);
-                            remain        <= 3'd1;
-                            store_data[0] <= wdata[head_tmp][7:0];
+                            remain        <= 3'd0;
+                            mem_dout <= wdata[head_tmp][7:0];
                             mem_wr <= 1;
                             end else if (execute[head_tmp] && op[head_tmp] == `lsb_SH) begin
                             $display("0 TERM L3 tag: %d, begin sh, address: %h, wdata: %d", tag[head_tmp], address[head_tmp], wdata[head_tmp][15:8]);
-                            remain        <= 3'd2;
-                            store_data[0] <= wdata[head_tmp][15:8];
-                            store_data[1] <= wdata[head_tmp][7:0];
+                            remain        <= 3'd1;
+                            store_data[1] <= wdata[head_tmp][15:8];
                             mem_wr <= 1;
+                            mem_dout <= wdata[head_tmp][7:0];
                             end else if (execute[head_tmp] && op[head_tmp] == `lsb_SW) begin
                             $display("0 TERM L3 tag: %d, begin sw, address: %h, wdata: %d", tag[head_tmp], address[head_tmp], wdata[head_tmp]);
-                            remain        <= 3'd4;
-                            store_data[0] <= wdata[head_tmp][31:24];
-                            store_data[1] <= wdata[head_tmp][23:16];
-                            store_data[2] <= wdata[head_tmp][15:8];
-                            store_data[3] <= wdata[head_tmp][7:0];
+                            remain        <= 3'd3;
+                            store_data[1] <= wdata[head_tmp][31:24];
+                            store_data[2] <= wdata[head_tmp][23:16];
+                            store_data[3] <= wdata[head_tmp][15:8];
+                            mem_dout <= wdata[head_tmp][7:0];
                             mem_wr <= 1;
                             end else begin
                             to_if <= 0;

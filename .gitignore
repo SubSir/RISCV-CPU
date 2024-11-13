@@ -11,3 +11,4 @@ testspace/
 fpga/
 script/
 in.log
+test.c

@@ -1,8 +1,9 @@
 `define WRITE 3'b000
 `define JUMP 3'b001
 `define BOTH 3'b010
-`define LS 3'b011
-`define NOTHING 3'b100
+`define LOAD 3'b011
+`define STORE 3'b100
+`define NOTHING 3'b101
 
 module rob#(parameter ROB_WIDTH = 4,
             parameter ROB_SIZE = 16,
@@ -62,28 +63,35 @@ module rob#(parameter ROB_WIDTH = 4,
                         to_rs_update_wdata <= wdata[head];
                         head               <= head + 1;
                         if (op[head] == `WRITE) begin
-                            $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
-                            to_rs_update       <= 1;
-                            to_reg_file       <= 1;
-                            to_reg_file_rd    <= rd[head];
-                            to_reg_file_wdata <= wdata[head];
+                                $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
+                                to_rs_update       <= 1;
+                                to_reg_file       <= 1;
+                                to_reg_file_rd    <= rd[head];
+                                to_reg_file_wdata <= wdata[head];
                             end else if (op[head] == `JUMP) begin
-                            $display("0 CMIT R2 JUMP tag: %d, jump: %d", head, jump[head]);
-                            clear    <= 1;
-                            to_if_pc <= jump[head];
+                                $display("0 CMIT R2 JUMP tag: %d, jump: %h", head, jump[head]);
+                                clear    <= 1;
+                                to_if_pc <= jump[head];
                             end else if (op[head] == `BOTH) begin
-                            $display("0 CMIT R2 BOTH tag: %d, rd: %d, wdata: %d, jump: %d", head, rd[head], wdata[head], jump[head]);
-                            to_rs_update       <= 1;
-                            to_reg_file       <= 1;
-                            to_reg_file_rd    <= rd[head];
-                            to_reg_file_wdata <= wdata[head];
-                            clear             <= 1;
-                            to_if_pc          <= jump[head];
-                            end else if (op[head] == `LS) begin
-                            $display("0 CMIT R2 LS tag: %d", head);
-                            to_rs_update       <= 1;
-                            to_lsb     <= 1;
-                            to_lsb_tag <= head;
+                                $display("0 CMIT R2 BOTH tag: %d, rd: %d, wdata: %h, jump: %h", head, rd[head], wdata[head], jump[head]);
+                                to_rs_update       <= 1;
+                                to_reg_file       <= 1;
+                                to_reg_file_rd    <= rd[head];
+                                to_reg_file_wdata <= wdata[head];
+                                clear             <= 1;
+                                to_if_pc          <= jump[head];
+                            end else if (op[head] == `LOAD) begin
+                                $display("0 CMIT R2 LS tag: %d", head);
+                                to_rs_update       <= 1;
+                                to_reg_file       <= 1;
+                                to_reg_file_rd    <= rd[head];
+                                to_reg_file_wdata <= wdata[head];
+                            end else if (op[head] == `STORE) begin
+                                $display("0 CMIT R2 STORE tag: %d", head);
+                                to_lsb     <= 1;
+                                to_lsb_tag <= head;
+                            end else begin
+                                $display("0 CMIT R2 NOTHING tag: %d", head);
                         end
                     end
                 end
@@ -102,10 +110,10 @@ module rob#(parameter ROB_WIDTH = 4,
                 end
                 
                 if (from_rs) begin
-                    if (from_rs_op != `LS) begin
-                        ready[from_rs_tag]    <= 1;
+                    if (from_rs_op == `LOAD) begin
+                        ready[from_rs_tag]    <= 0;
                     end else begin
-                        ready[from_rs_tag]    <= from_rs_ready;
+                        ready[from_rs_tag]    <= 1;
                     end
                     op[from_rs_tag]       <= from_rs_op;
                     rd[from_rs_tag]       <= from_rs_rd;

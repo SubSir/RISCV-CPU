@@ -119,7 +119,6 @@ module cpu(
   wire [RS_WIDTH-1:0] rs_to_rob_index;
   wire [ROB_WIDTH-1:0] rs_to_rob_tag;
   wire [2:0]    rs_to_rob_op;
-  wire          rs_to_rob_ready;
   wire [4:0]    rs_to_rob_rd;
   wire [31:0]   rs_to_rob_wdata;
   wire [31:0]   rs_to_rob_jump;
@@ -256,7 +255,6 @@ module cpu(
     .from_rs           ( rs_to_rob           ),
     .from_rs_tag       ( rs_to_rob_tag       ),
     .from_rs_op        ( rs_to_rob_op        ),
-    .from_rs_ready        ( rs_to_rob_ready        ),
     .from_rs_rd        ( rs_to_rob_rd        ),
     .from_rs_wdata     ( rs_to_rob_wdata     ),
     .from_rs_jump      ( rs_to_rob_jump      ),
@@ -321,7 +319,6 @@ module cpu(
     .to_rob_index        ( rs_to_rob_index        ),
     .to_rob_tag          ( rs_to_rob_tag          ),
     .to_rob_op           ( rs_to_rob_op           ),
-    .to_rob_ready           ( rs_to_rob_ready          ),
     .to_rob_rd           ( rs_to_rob_rd           ),
     .to_rob_wdata        ( rs_to_rob_wdata        ),
     .to_rob_jump         ( rs_to_rob_jump         ),
@@ -341,12 +338,6 @@ module cpu(
       mem_a_reg = u_Lsb.mem_a;
       mem_dout_reg = u_Lsb.mem_dout;
     end
-  end
-
-  always @(posedge clk_in) begin
-    // mem_wr_reg <= 1;
-    // mem_a_reg <= 32'h30004;
-    // mem_dout_reg <= 8'h0;
   end
 
 endmodule

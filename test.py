@@ -146,7 +146,7 @@ def main():
 
     no_testcase_name_check("000")
     build_sim(v_sources)
-    build_sim_test("000")
+    # build_sim_test("000")
     # run_sim()
     # check()
 
