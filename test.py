@@ -144,9 +144,9 @@ def check():
 def main():
     v_sources = find_v_sources(SRC_DIR)
 
-    no_testcase_name_check("000")
+    no_testcase_name_check("006")
     build_sim(v_sources)
-    # build_sim_test("000")
+    build_sim_test("006")
     # run_sim()
     # check()
 

@@ -12,3 +12,4 @@ fpga/
 script/
 in.log
 test.c
+log.log

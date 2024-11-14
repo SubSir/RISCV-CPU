@@ -27,7 +27,7 @@ module RegisterFile #(parameter RS_WIDTH = 2)(input rst_in,
                 end
                 end else begin
                 if (from_rs_rs1_flag) begin
-                    $display("0 LOG1 R4 rs ask for %d, it's %d", from_rs_rs1, reg_file[from_rs_rs1]);
+                    // $display("0 LOG1 R4 rs ask for %d, it's %d", from_rs_rs1, reg_file[from_rs_rs1]);
                     to_rs_rs1_flag <= 1;
                     to_rs_index <= from_rs_index;
                     to_rs_rs1 <= reg_file[from_rs_rs1];
@@ -36,7 +36,7 @@ module RegisterFile #(parameter RS_WIDTH = 2)(input rst_in,
                 end
 
                 if (from_rs_rs2_flag) begin
-                    $display("0 LOG1 R4 rs ask for %d, it's %d", from_rs_rs2, reg_file[from_rs_rs2]);
+                    // $display("0 LOG1 R4 rs ask for %d, it's %d", from_rs_rs2, reg_file[from_rs_rs2]);
                     to_rs_rs2_flag <= 1;
                     to_rs_index <= from_rs_index;
                     to_rs_rs2 <= reg_file[from_rs_rs2];
@@ -45,7 +45,7 @@ module RegisterFile #(parameter RS_WIDTH = 2)(input rst_in,
                 end
                 
                 if (from_rob) begin
-                    $display("0 LOG1 R4 rob write %d as %d", from_rob_rd, from_rob_wdata);
+                    // $display("0 LOG1 R4 rob write %d as %d", from_rob_rd, from_rob_wdata);
                     reg_file[from_rob_rd] <= from_rob_wdata;
                 end
                 reg_file[0] <= 32'b0;

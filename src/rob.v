@@ -63,17 +63,17 @@ module rob#(parameter ROB_WIDTH = 4,
                         to_rs_update_wdata <= wdata[head];
                         head               <= head + 1;
                         if (op[head] == `WRITE) begin
-                                $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
+                                // $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
                                 to_rs_update       <= 1;
                                 to_reg_file       <= 1;
                                 to_reg_file_rd    <= rd[head];
                                 to_reg_file_wdata <= wdata[head];
                             end else if (op[head] == `JUMP) begin
-                                $display("0 CMIT R2 JUMP tag: %d, jump: %h", head, jump[head]);
+                                // $display("0 CMIT R2 JUMP tag: %d, jump: %h", head, jump[head]);
                                 clear    <= 1;
                                 to_if_pc <= jump[head];
                             end else if (op[head] == `BOTH) begin
-                                $display("0 CMIT R2 BOTH tag: %d, rd: %d, wdata: %h, jump: %h", head, rd[head], wdata[head], jump[head]);
+                                // $display("0 CMIT R2 BOTH tag: %d, rd: %d, wdata: %h, jump: %h", head, rd[head], wdata[head], jump[head]);
                                 to_rs_update       <= 1;
                                 to_reg_file       <= 1;
                                 to_reg_file_rd    <= rd[head];
@@ -81,17 +81,17 @@ module rob#(parameter ROB_WIDTH = 4,
                                 clear             <= 1;
                                 to_if_pc          <= jump[head];
                             end else if (op[head] == `LOAD) begin
-                                $display("0 CMIT R2 LS tag: %d", head);
+                                // $display("0 CMIT R2 LOAD tag: %d, rd: %d, data: %d", head, rd[head], wdata[head]);
                                 to_rs_update       <= 1;
                                 to_reg_file       <= 1;
                                 to_reg_file_rd    <= rd[head];
                                 to_reg_file_wdata <= wdata[head];
                             end else if (op[head] == `STORE) begin
-                                $display("0 CMIT R2 STORE tag: %d", head);
+                                // $display("0 CMIT R2 STORE tag: %d", head);
                                 to_lsb     <= 1;
                                 to_lsb_tag <= head;
                             end else begin
-                                $display("0 CMIT R2 NOTHING tag: %d", head);
+                                // $display("0 CMIT R2 NOTHING tag: %d", head);
                         end
                     end
                 end
