@@ -148,9 +148,9 @@ def main():
 
     v_sources = find_v_sources(SRC_DIR)
 
-    no_testcase_name_check("100")
+    no_testcase_name_check("superloop")
     build_sim(v_sources)
-    build_sim_test("100")
+    build_sim_test("superloop")
     start_time = time.time()  # 记录开始时间
     run_sim()
     end_time = time.time()  # 记录结束时间
