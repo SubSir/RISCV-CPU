@@ -68,7 +68,7 @@ module ALU #(parameter ROB_WIDTH = 4, parameter RS_WIDTH = 2)
                     // $display("0 LOG2 A5 index: %d, a: %d b: %d op: sra result: %d", from_rs_index, a, b, a >>> b[4:0]);
                 end
                 `alu_SLT: begin
-                    result  <= (a < b) ? 32'b1 : 32'b0;
+                    result  <= ($signed(a) < $signed(b)) ? 32'b1 : 32'b0;
                     // $display("0 LOG2 A5 index: %d, a: %d b: %d op: slt result: %d", from_rs_index, a, b, (a < b) ? 32'b1 : 32'b0);
                 end
                 `alu_SLTU: begin
@@ -80,7 +80,7 @@ module ALU #(parameter ROB_WIDTH = 4, parameter RS_WIDTH = 2)
                     // $display("0 LOG2 A5 index: %d, a: %d b: %d op: beq result: %d", from_rs_index, a, b, (a == b)? 32'b1 : 32'b0);
                 end
                 `alu_BGE: begin
-                    result  <= (a >= b)? 32'b1 : 32'b0;
+                    result  <= ($signed(a) >= $signed(b))? 32'b1 : 32'b0;
                     // $display("0 LOG2 A5 index: %d, a: %d b: %d op: bge result: %d", from_rs_index, a, b, (a >= b)? 32'b1 : 32'b0);
                 end
                 `alu_BGEU: begin

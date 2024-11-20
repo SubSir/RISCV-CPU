@@ -141,14 +141,23 @@ def check():
             print("FAIL")
 
 
+import time
+
+
 def main():
+
     v_sources = find_v_sources(SRC_DIR)
 
-    no_testcase_name_check("006")
+    no_testcase_name_check("100")
     build_sim(v_sources)
-    build_sim_test("006")
-    # run_sim()
-    # check()
+    build_sim_test("100")
+    start_time = time.time()  # 记录开始时间
+    run_sim()
+    end_time = time.time()  # 记录结束时间
+    check()
+
+    elapsed_time = end_time - start_time  # 计算运行时间
+    print(f"运行时间: {elapsed_time:.2f} 秒")
 
 
 if __name__ == "__main__":

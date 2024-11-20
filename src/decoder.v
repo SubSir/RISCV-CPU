@@ -35,6 +35,7 @@
 `define JALR 6'b100010
 `define AUIPC 6'b100011
 `define LUI 6'b100100
+`define NOTHING 6'b100101
 
 module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                 (input rst_in,
@@ -278,7 +279,7 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                     end else begin
                     // Illegal
                     // $display("0 LEAD D0 : ElSE, PC : %h, rob_tag : %d", pc, rob_tag);
-                    to_rs <= 0;
+                    to_rs_op <= `NOTHING;
                     end
             end
         end

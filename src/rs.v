@@ -13,6 +13,7 @@
 `define BGEU_alu 4'b1100
 `define BNE_alu 4'b1101
 `define ADD_alu_pc 4'b1110
+`define NOTHING_alu 4'b1111
 
 `define WRITE_rob 3'b000
 `define JUMP_rob 3'b001
@@ -88,9 +89,11 @@ module rs#(parameter ROB_WIDTH = 4,
     reg [3:0] op_lsb [0:RS_SIZE-1];
     reg [4:0] rd [0:RS_SIZE-1];
     reg vj_ready [0:RS_SIZE-1];
+    reg vj_lock [0:RS_SIZE-1];
     reg [31:0] vj [0:RS_SIZE-1];
     reg [ROB_WIDTH-1:0] qj [0:RS_SIZE-1];
     reg vk_ready [0:RS_SIZE-1];
+    reg vk_lock [0:RS_SIZE-1];
     reg [31:0] vk [0:RS_SIZE-1];
     reg [ROB_WIDTH-1:0] qk [0:RS_SIZE-1];
     reg [31:0] imm [0:RS_SIZE-1];
@@ -135,12 +138,12 @@ module rs#(parameter ROB_WIDTH = 4,
                 to_decoder <= (busy_cnt < RS_SIZE);
                 if (from_rob_update) begin
                     for(i = 0; i < RS_SIZE; i = i + 1)begin
-                        if (busy[i] && !vj_ready[i] && qj[i] == from_rob_update_order) begin
+                        if (busy[i] && vj_lock[i] && qj[i] == from_rob_update_order) begin
                             vj[i]    <= from_rob_update_wdata;
                             vj_ready[i] <= 1;
                         end
                         
-                        if (busy[i] && !vk_ready[i] && qk[i] == from_rob_update_order) begin
+                        if (busy[i] && vk_lock[i] && qk[i] == from_rob_update_order) begin
                             vk[i]    <= from_rob_update_wdata;
                             vk_ready[i] <= 1;
                         end
@@ -170,8 +173,6 @@ module rs#(parameter ROB_WIDTH = 4,
                             rd_use  = 1;
                             rs1_use = 1;
                             rs2_use = 1; // 1 表示使用
-                            vj_ready[i]   <= 0;
-                            vk_ready[i]   <= 0;
                             alu_double[i] <= 0;
                             op_rob[i]     <= `WRITE_rob;
                             rob_tag[i]    <= from_decoder_tag;
@@ -371,8 +372,10 @@ module rs#(parameter ROB_WIDTH = 4,
                                 op[i]     <= `ADD_alu;
                                 op_rob[i] <= `BOTH_rob;
                                 end else if (from_decoder_op == `LUI)begin
-                                // $display("0 CLNT R1 index: %d, LUI, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
+                                // $display("0 CLNT R1 index: %d, LUI, rd: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_imm, from_decoder_pc);
                                 op[i] <= `ADD_alu;
+                                rs1_use = 0;
+                                vj[i] <= 32'b0;
                                 rs2_use = 0;
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `AUIPC)begin
@@ -382,8 +385,17 @@ module rs#(parameter ROB_WIDTH = 4,
                                 rs2_use = 0;
                                 vj[i] <= from_decoder_pc;
                                 vk[i] <= from_decoder_imm;
-                            end
+                                end else begin
+                                // $display("0 CLNT R1 index: %d, NOTHING, pc: %h", i, from_decoder_pc);
+                                op[i] <= `NOTHING_alu;
+                                op_rob[i] <= `NOTHING_rob;
+                                rd_use = 0;
+                                rs1_use = 0;
+                                rs2_use = 0;
+                                end
                             
+                            vj_lock[i] <= 0;
+                            vk_lock[i] <= 0;
                             if (rs1_use == 1) begin
                                 vj_ready[i] <= 0;
                                 if (update && update_rd == from_decoder_rs1) begin
@@ -391,6 +403,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                     vj_ready[i] <= 1;
                                     // $display("0 WARN R1 rs1: %d, vj: %d", from_decoder_rs1, from_rob_update_wdata);
                                     end else if (reorder_busy[from_decoder_rs1]) begin
+                                    vj_lock[i] <= 1;
                                     qj[i] <= reorder[from_decoder_rs1];
                                     // $display("0 WARN R1 rs1: %d, qj: %d", from_decoder_rs1, reorder[from_decoder_rs1]);
                                     end else begin
@@ -411,6 +424,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                     vk[i] <= from_rob_update_wdata;
                                     vk_ready[i] <= 1;
                                     end else if (reorder_busy[from_decoder_rs2]) begin
+                                    vk_lock[i] <= 1;
                                     qk[i] <= reorder[from_decoder_rs2];
                                     // $display("0 WARN R1 rs2: %d, qk: %d", from_decoder_rs2, reorder[from_decoder_rs2]);
                                     end else begin
@@ -454,7 +468,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             to_rob_wdata <= pc[from_alu_index];
                             to_rob_jump  <= from_alu_result;
                             end else if (op_rob[from_alu_index] == `LOAD_rob || op_rob[from_alu_index] == `STORE_rob) begin
-                            // $display("0 SNAP R1 index: %d, LOAD tag: %d, address: %h, wdata: %d", from_alu_index, rob_tag[from_alu_index], from_alu_result, vk[from_alu_index]);
+                            // $display("0 SNAP R1 index: %d, LS tag: %d, address: %h, wdata: %d, pc: %h", from_alu_index, rob_tag[from_alu_index], from_alu_result, vk[from_alu_index], pc[from_alu_index]);
                             to_lsb         <= 1;
                             to_lsb_op      <= op_lsb[from_alu_index];
                             to_lsb_tag     <= rob_tag[from_alu_index];
@@ -498,6 +512,7 @@ module rs#(parameter ROB_WIDTH = 4,
                     to_alu <= 0;
                     for(i = 0; i < RS_SIZE; i = i + 1) begin
                         if (!break && busy[i] && !cal[i] && vj_ready[i] && vk_ready[i]) begin
+                            // $display("0 VOTE R1 to alu index: %d, op: %d, vj: %d, vk: %d, imm: %d", i, op[i], vj[i], vk[i], imm[i]);
                             break = 1;
                             to_alu    <= 1;
                             to_alu_index <= i;
