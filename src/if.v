@@ -1,5 +1,8 @@
 module IF #(parameter IF_WIDTH = 2,
-            parameter IF_SIZE = 4)
+            parameter IF_SIZE = 4,
+            parameter CACHE_WIDTH = 4,
+            parameter CACHE_SIZE = 16,
+            parameter TAG_WIDTH = 15-CACHE_WIDTH)
            (input rst_in,
             input clk_in,
             input rdy_in,
@@ -7,7 +10,9 @@ module IF #(parameter IF_WIDTH = 2,
             input [7:0] mem_din,
             input from_lsb,
             input [31:0]from_rob_jump,
-            input from_decoder,
+            input from_rs_bsy,
+            input from_lsb_bsy,
+            input from_rob_bsy,
             output reg mem_wr,
             output reg [31:0] mem_a,
             output reg to_decoder,
@@ -24,8 +29,18 @@ module IF #(parameter IF_WIDTH = 2,
     reg next;
     reg [31:0] pc_tmp;
     reg [IF_WIDTH-1:0] tail_tmp;
+    reg [IF_WIDTH-1:0] tail_tmp2;
     reg bubble;
     reg [31:0] tmp_mem_a;
+    reg cache_busy[0:CACHE_SIZE-1];
+    reg [TAG_WIDTH-1:0] cache_tag[0:CACHE_SIZE-1];
+    reg [31:0] cache_data[0:CACHE_SIZE-1];
+
+    integer i;
+
+    wire [TAG_WIDTH-1:0] tag = pc[16:17-TAG_WIDTH];
+    wire [CACHE_WIDTH-1:0] cache_index = pc[16-TAG_WIDTH:2];
+
     always @(posedge clk_in or posedge rst_in)begin
         if (rdy_in) begin
             if (rst_in || clear) begin
@@ -36,6 +51,9 @@ module IF #(parameter IF_WIDTH = 2,
                 to_decoder <= 0;
                 if (rst_in) begin
                     pc <= 32'b0;
+                    for (i = 0; i < CACHE_SIZE; i = i + 1) begin
+                        cache_busy[i] <= 0;
+                    end
                     end else begin
                     loading <= 0;
                     pc      <= from_rob_jump;
@@ -54,21 +72,36 @@ module IF #(parameter IF_WIDTH = 2,
                             remain <= remain -3'b1;
                             end else begin
                             next = 1;
+                            pc_tmp = pc + 32'd4;
                             ins[tail]    <= {mem_din, load_data[1], load_data[2], load_data[3]};
                             ins_pc[tail] <= pc + 32'd4;
                             pc           <= pc + 32'd4;
-                            pc_tmp = pc + 32'd4;
+                            // $display("0 LOG2 I6 i-cache, pc: %h, tag: %h, index: %h, data: %h", pc, tag, cache_index, {mem_din, load_data[1], load_data[2], load_data[3]});
+                            cache_busy[cache_index] <= 1;
+                            cache_tag[cache_index] <= tag;
+                            cache_data[cache_index] <= {mem_din, load_data[1], load_data[2], load_data[3]};
                         end
                     end
                     
                     tail_tmp = tail + next;
+                    tail_tmp2 = tail_tmp + 1;
                     if (!loading || remain == 3'b0) begin
                         loading <= 1;
                         tail    <= tail_tmp;
-                        if (tail_tmp + 1 != head) begin
-                            remain <= 3'b100;
-                            mem_wr <= 0;
-                            mem_a  <= pc_tmp;
+                        if (tail_tmp2 != head) begin
+                            if (cache_busy[pc_tmp[16-TAG_WIDTH:2]] && cache_tag[pc_tmp[16-TAG_WIDTH:2]] == pc_tmp[16:17-TAG_WIDTH]) begin
+                                // $display("0 LOG2 I6 i-cache hit, pc: %h, tag: %h, index: %h, data: %h", pc_tmp ,pc_tmp[16:17-TAG_WIDTH], pc_tmp[16-TAG_WIDTH:2], cache_data[pc_tmp[16-TAG_WIDTH:2]]);
+                                // $display("0 LOG1 I6 tag: %h, index: %h", pc_tmp[16:17-TAG_WIDTH], pc_tmp[16-TAG_WIDTH:2]);
+                                loading <= 0;
+                                ins[tail_tmp]    <= cache_data[pc_tmp[16-TAG_WIDTH:2]];
+                                ins_pc[tail_tmp] <= pc_tmp + 32'd4;
+                                pc <= pc_tmp + 32'd4;
+                                tail <= tail_tmp2;
+                            end else begin
+                                remain <= 3'b100;
+                                mem_wr <= 0;
+                                mem_a  <= pc_tmp;
+                            end
                             end else begin
                             loading <= 0;
                         end
@@ -77,7 +110,7 @@ module IF #(parameter IF_WIDTH = 2,
                     loading <= 0;
                 end
                 
-                if (head == tail || !from_decoder) begin
+                if (head == tail || !from_rs_bsy || !from_rob_bsy || !from_lsb_bsy) begin
                     to_decoder <= 0;
                     end else begin
                     to_decoder     <= 1;

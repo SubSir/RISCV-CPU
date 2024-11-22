@@ -4,7 +4,12 @@ import shutil
 import glob
 from pathlib import Path
 
-PWD = os.getcwd()
+current_dir = os.getcwd()
+
+if current_dir.endswith("testspace"):
+    PWD = os.path.join(current_dir, "../")
+else:
+    PWD = current_dir
 
 SRC_DIR = os.path.join(PWD, "src")
 TESTSPACE_DIR = os.path.join(PWD, "testspace")
@@ -148,9 +153,9 @@ def main():
 
     v_sources = find_v_sources(SRC_DIR)
 
-    no_testcase_name_check("superloop")
+    no_testcase_name_check("103")
     build_sim(v_sources)
-    build_sim_test("superloop")
+    build_sim_test("103")
     start_time = time.time()  # 记录开始时间
     run_sim()
     end_time = time.time()  # 记录结束时间

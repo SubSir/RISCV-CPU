@@ -58,7 +58,7 @@ module rs#(parameter ROB_WIDTH = 4,
            input from_rob_update,
            input [ROB_WIDTH-1:0] from_rob_update_order,
            input [31:0] from_rob_update_wdata,
-           output reg to_decoder,                     // 有剩余为 1
+           output reg to_if_bsy,                     // 有剩余为 1
            output reg to_alu,
            output reg [RS_WIDTH-1:0] to_alu_index,
            output reg [31:0] to_alu_a,
@@ -125,7 +125,7 @@ module rs#(parameter ROB_WIDTH = 4,
                 to_alu      <= 0;
                 to_reg_file_rs1_flag <= 0;
                 to_reg_file_rs2_flag <= 0;
-                to_decoder  <= 1;
+                to_if_bsy  <= 1;
                 busy_cnt    <= 0;
                 for (i=0; i < 32; i = i + 1) begin
                     reorder_busy[i] <= 0;
@@ -135,7 +135,6 @@ module rs#(parameter ROB_WIDTH = 4,
                 use_alu = 0;
                 to_reg_file_rs1_flag <= 0;
                 to_reg_file_rs2_flag <= 0;
-                to_decoder <= (busy_cnt < RS_SIZE);
                 if (from_rob_update) begin
                     for(i = 0; i < RS_SIZE; i = i + 1)begin
                         if (busy[i] && vj_lock[i] && qj[i] == from_rob_update_order) begin
@@ -444,7 +443,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             end
                         end
                     end
-                end
+                end 
             
                 to_rob <= 0;
                 to_lsb <= 0;
@@ -477,9 +476,11 @@ module rs#(parameter ROB_WIDTH = 4,
                         end
                         end else begin
                         if (from_alu_result == 32'b1) begin
+                            // $display("0 SNAP R1 index: %d, JUMP tag: %d, imm: %h, pc: %h", from_alu_index, rob_tag[from_alu_index], imm[from_alu_index], pc[from_alu_index]);
                             use_alu = 1;
                             to_alu                <= 1;
                             alu_double[from_alu_index] <= 0;
+                            to_alu_index          <= from_alu_index;
                             to_alu_op             <= `ADD_alu_pc;
                             to_alu_a              <= imm[from_alu_index];
                             to_alu_b              <= pc[from_alu_index];
@@ -496,6 +497,7 @@ module rs#(parameter ROB_WIDTH = 4,
                 end
 
                 busy_cnt <= busy_cnt_tmp;
+                to_if_bsy <= (busy_cnt_tmp + 2 < RS_SIZE);
                 
                 if (from_reg_file_rs1_flag)begin
                     vj_ready[from_reg_file_index] <= 1;

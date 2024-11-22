@@ -28,6 +28,9 @@ module cpu(
 // - 0x30004 read: read clocks passed since cpu starts (in dword, 4 bytes)
 // - 0x30004 write: indicates program stop (will output '\0' through uart tx)
 
+  parameter CACHE_WIDTH = 4;
+  parameter CACHE_SIZE = 16;
+  parameter TAG_WIDTH = 15-CACHE_WIDTH;
   parameter IF_WIDTH = 2;
   parameter IF_SIZE = 4;
   parameter ROB_SIZE = 16;
@@ -46,7 +49,6 @@ module cpu(
   assign mem_dout = mem_dout_reg;
 
   // decoder outports wire
-  wire                 	decoder_to_if;
   wire                 	decoder_to_rs;
   wire [5:0]           	decoder_to_rs_op;
   wire [4:0]           	decoder_to_rs_rd;
@@ -76,7 +78,7 @@ module cpu(
   // wire [31:0]   mem_a;
   // wire          mem_wr;
   wire          lsb_to_if;
-  wire          lsb_to_decoder;
+  wire          lsb_to_if_bsy;
   wire          lsb_to_rob;
   wire [31:0]   lsb_to_rob_data;
   wire [ROB_WIDTH-1:0]    lsb_to_rob_tag;
@@ -90,7 +92,7 @@ module cpu(
 
   // rob outports wire
   wire          clear;
-  wire          rob_to_decoder;
+  wire          rob_to_if_bsy;
   wire          rob_to_reg_file;
   wire [4:0]    rob_to_reg_file_rd;
   wire [31:0]   rob_to_reg_file_wdata;
@@ -104,7 +106,7 @@ module cpu(
 
   
   // rs outports wire
-  wire          rs_to_decoder;
+  wire          rs_to_if_bsy;
   wire          rs_to_alu;
   wire [RS_WIDTH-1:0] rs_to_alu_index;
   wire [31:0]   rs_to_alu_a;
@@ -139,10 +141,6 @@ module cpu(
     .from_if      	( if_to_decoder       ),
     .pc           	( if_to_decoder_pc            ),
     .instruction  	( if_to_decoder_ins   ),
-    .from_rob     	( rob_to_decoder      ),
-    .from_rs      	( rs_to_decoder       ),
-    .from_lsb     	( lsb_to_decoder      ),
-    .to_if        	( decoder_to_if         ),
     .to_rs        	( decoder_to_rs         ),
     .to_rs_op     	( decoder_to_rs_op      ),
     .to_rs_rd     	( decoder_to_rs_rd      ),
@@ -158,7 +156,10 @@ module cpu(
   
   IF #(
     .IF_WIDTH 	( IF_WIDTH  ),
-    .IF_SIZE  	( IF_SIZE   ))
+    .IF_SIZE  	( IF_SIZE   ),
+    .CACHE_WIDTH 	( CACHE_WIDTH  ),
+    .CACHE_SIZE  	( CACHE_SIZE  ),
+    .TAG_WIDTH  	( TAG_WIDTH   ))
   u_IF(
     .rst_in         	( rst_in          ),
     .clk_in         	( clk_in          ),
@@ -167,7 +168,9 @@ module cpu(
     .mem_din        	( mem_din         ),
     .from_lsb       	( lsb_to_if        ),
     .from_rob_jump  	( rob_to_if_pc   ),
-    .from_decoder  	  ( decoder_to_if      ),
+    .from_lsb_bsy  	  ( lsb_to_if_bsy      ),
+    .from_rs_bsy      	( rs_to_if_bsy     ),
+    .from_rob_bsy      	( rob_to_if_bsy     ),
     // .mem_wr         	( mem_wr          ),
     // .mem_a          	( mem_a           ),
     .to_decoder     	( if_to_decoder      ),
@@ -216,7 +219,7 @@ module cpu(
     // .mem_a           ( mem_a           ),
     // .mem_wr          ( mem_wr          ),
     .to_if           ( lsb_to_if           ),
-    .to_decoder      ( lsb_to_decoder      ),
+    .to_if_bsy      ( lsb_to_if_bsy      ),
     .to_rob          ( lsb_to_rob          ),
     .to_rob_tag      ( lsb_to_rob_tag      ),
     .to_rob_data     ( lsb_to_rob_data     )
@@ -262,7 +265,7 @@ module cpu(
     .from_lsb_tag       ( lsb_to_rob_tag       ),
     .from_lsb_wdata   ( lsb_to_rob_data   ),
     .clear             ( clear             ),
-    .to_decoder        ( rob_to_decoder        ),
+    .to_if_bsy        ( rob_to_if_bsy        ),
     .to_reg_file       ( rob_to_reg_file       ),
     .to_reg_file_rd    ( rob_to_reg_file_rd    ),
     .to_reg_file_wdata ( rob_to_reg_file_wdata ),
@@ -304,7 +307,7 @@ module cpu(
     .from_rob_update     ( rob_to_rs_update     ),
     .from_rob_update_order ( rob_to_rs_update_order ),
     .from_rob_update_wdata ( rob_to_rs_update_wdata ),
-    .to_decoder          ( rs_to_decoder          ),
+    .to_if_bsy          ( rs_to_if_bsy          ),
     .to_alu              ( rs_to_alu              ),
     .to_alu_index       ( rs_to_alu_index       ),
     .to_alu_a            ( rs_to_alu_a            ),

@@ -23,7 +23,7 @@ module rob#(parameter ROB_WIDTH = 4,
             input [ROB_WIDTH-1:0] from_lsb_tag,
             input [31:0] from_lsb_wdata,
             output reg clear,
-            output reg to_decoder,
+            output reg to_if_bsy,
             output reg to_reg_file,
             output reg [4:0] to_reg_file_rd,
             output reg [31:0] to_reg_file_wdata,
@@ -41,18 +41,22 @@ module rob#(parameter ROB_WIDTH = 4,
     reg [4:0] rd[ROB_SIZE-1:0];
     reg [31:0] wdata[ROB_SIZE-1:0];
     reg [31:0] jump[ROB_SIZE-1:0];
-    reg [ROB_WIDTH-1:0] tail_tmp;
+    reg [ROB_WIDTH:0] busy_cnt;
+    reg [ROB_WIDTH:0] busy_cnt_tmp;
+
     always @(posedge clk_in or posedge rst_in)begin
         if (rdy_in) begin
             if (rst_in || clear) begin
                 head           <= 0;
                 tail           <= 0;
-                to_decoder     <= 1;
+                to_if_bsy     <= 1;
                 to_lsb         <= 0;
                 to_rs          <= 0;
                 to_rs_update   <= 0;
                 clear          <= 0;
+                busy_cnt       <= 0;
                 end else begin
+                busy_cnt_tmp = busy_cnt;
                 to_lsb  <= 0;
                 to_reg_file       <= 0;
                 to_rs_update   <= 0;
@@ -62,6 +66,7 @@ module rob#(parameter ROB_WIDTH = 4,
                         to_rs_update_order <= head;
                         to_rs_update_wdata <= wdata[head];
                         head               <= head + 1;
+                        busy_cnt_tmp = busy_cnt_tmp - 1;
                         if (op[head] == `WRITE) begin
                                 // $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
                                 to_rs_update       <= 1;
@@ -96,16 +101,16 @@ module rob#(parameter ROB_WIDTH = 4,
                     end
                 end
 
-                tail_tmp = tail + 2;
-                if (tail_tmp == head) begin
-                    to_decoder <= 0;
+                if (busy_cnt_tmp + 4 >= ROB_SIZE) begin
+                    to_if_bsy <= 0;
                     to_rs      <= 0;
                 end else begin
                         to_rs          <= 1;
                         if (from_decoder) begin
-                        to_decoder     <= 1;
+                        to_if_bsy     <= 1;
                         ready[tail]    <= 0;
                         tail           <= tail +1;
+                        busy_cnt_tmp = busy_cnt_tmp + 1;
                     end
                 end
                 
@@ -125,6 +130,8 @@ module rob#(parameter ROB_WIDTH = 4,
                     ready[from_lsb_tag] <= 1;
                     wdata[from_lsb_tag] <= from_lsb_wdata;
                 end
+
+                busy_cnt <= busy_cnt_tmp;
             end
         end
     end

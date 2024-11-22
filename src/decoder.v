@@ -45,10 +45,6 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                  input from_if,
                  input [31:0] pc,
                  input [31:0] instruction,
-                 input from_rob,                       // rob 有剩余为1
-                 input from_rs,                        // rs 有剩余为1
-                 input from_lsb,                       // lsb 有剩余为1
-                 output reg to_if,
                  output reg to_rs,
                  output reg [5:0]to_rs_op,
                  output reg [4:0] to_rs_rd,
@@ -70,19 +66,14 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
     reg [ROB_WIDTH-1:0] rob_tag;
     always @(posedge clk_in or negedge rst_in) begin
         if (rdy_in) begin
-            if (rst_in | clear | !from_if | !from_rob | !from_rs | !from_lsb) begin
+            if (rst_in | clear | !from_if) begin
                 to_rs  <= 0;
                 to_lsb <= 0;
                 to_rob <= 0;
                 if (rst_in || clear) begin
                     rob_tag <= 0;
                 end
-                if (from_rob && from_rs && from_lsb) begin
-                    to_if <= 1;
-                    end else begin
-                    to_if <= 0;
-                end
-                end else begin
+            end else begin
                 to_rob <= 1;
                 to_rs      <= 1;
                 to_lsb     <= 0;
