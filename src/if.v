@@ -100,19 +100,19 @@ module IF #(parameter IF_WIDTH = 2,
                     if (!loading) begin
                         loading <= 1;
                         if (tail_tmp != head) begin
-                            // if (cache_busy[cache_index] && cache_tag[cache_index] == tag) begin
-                            //     $display("0 LOG2 I3 i-cache hit, pc: %h, tag: %h, index: %h, data: %h", pc , tag, cache_index, cache_data[cache_index]);
-                            //     loading <= 0;
-                            //     ins[tail_tmp]    <= cache_data[cache_index];
-                            //     ins_pc[tail_tmp] <= pc;
-                            //     ins_pc_next[tail_tmp] <= cache_pc_next[cache_index];
-                            //     pc <= cache_pc_next[cache_index];
-                            //     tail <= tail_tmp2;
-                            // end else begin
+                            if (cache_busy[cache_index] && cache_tag[cache_index] == tag) begin
+                                // $display("0 LOG2 I3 i-cache hit, pc: %h, tag: %h, index: %h, data: %h", pc , tag, cache_index, cache_data[cache_index]);
+                                loading <= 0;
+                                ins[tail]    <= cache_data[cache_index];
+                                ins_pc[tail] <= pc;
+                                ins_pc_next[tail] <= cache_pc_next[cache_index];
+                                pc <= cache_pc_next[cache_index];
+                                tail <= tail + 1;
+                            end else begin
                                 remain <= 3'b100;
                                 mem_wr <= 0;
                                 mem_a  <= pc;
-                            // end
+                            end
                             end else begin
                             loading <= 0;
                         end

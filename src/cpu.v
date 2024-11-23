@@ -30,7 +30,7 @@ module cpu(
 
   parameter CACHE_WIDTH = 4;
   parameter CACHE_SIZE = 16;
-  parameter TAG_WIDTH = 15-CACHE_WIDTH;
+  parameter TAG_WIDTH = 16-CACHE_WIDTH;
   parameter IF_WIDTH = 2;
   parameter IF_SIZE = 4;
   parameter ROB_SIZE = 16;

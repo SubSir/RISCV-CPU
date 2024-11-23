@@ -146,7 +146,7 @@ def main():
     v_sources = find_v_sources(SRC_DIR)
 
     build_sim(v_sources)
-    build_sim_test("102")
+    build_sim_test("007")
     start_time = time.time()  # 记录开始时间
     run_sim()
     end_time = time.time()  # 记录结束时间
@@ -156,5 +156,38 @@ def main():
     print(f"运行时间: {elapsed_time:.2f} 秒")
 
 
+testlist = [
+    "000",
+    "001",
+    "002",
+    "003",
+    "004",
+    "005",
+    "006",
+    "007",
+    "100",
+    "101",
+    "basicopt",
+    "manyarguments",
+    "statement",
+    "superloop",
+    "uartboom",
+    "103",
+    "102",
+]
+
 if __name__ == "__main__":
-    main()
+    v_sources = find_v_sources(SRC_DIR)
+
+    build_sim(v_sources)
+
+    for test in testlist:
+        print("Start to run test: " + test)
+        build_sim_test(test)
+        start_time = time.time()  # 记录开始时间
+        run_sim()
+        end_time = time.time()  # 记录结束时间
+        check()
+
+        elapsed_time = end_time - start_time  # 计算运行时间
+        print(f"运行时间: {elapsed_time:.2f} 秒")
