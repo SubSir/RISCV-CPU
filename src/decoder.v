@@ -44,6 +44,7 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                  input clear,
                  input from_if,
                  input [31:0] pc,
+                 input [31:0] pc_next,
                  input [31:0] instruction,
                  output reg to_rs,
                  output reg [5:0]to_rs_op,
@@ -52,6 +53,7 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                  output reg [4:0] to_rs_rs2,
                  output reg [31:0] to_rs_imm,
                  output reg [31:0] to_rs_pc,
+                 output reg [31:0] to_rs_pc_next,
                  output reg [ROB_WIDTH-1:0] to_rs_tag,
                  output reg to_lsb,
                  output reg [ROB_WIDTH-1:0]to_lsb_tag,
@@ -63,6 +65,9 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
     wire[4:0] rd     = instruction[11:7];
     wire[4:0] rs1    = instruction[19:15];
     wire[4:0] rs2    = instruction[24:20];
+    wire[1:0] opcode2 = instruction[1:0];
+    wire[2:0] func3_2 = instruction[15:13];
+
     reg [ROB_WIDTH-1:0] rob_tag;
     always @(posedge clk_in or negedge rst_in) begin
         if (rdy_in) begin
@@ -84,6 +89,7 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                 to_lsb_tag <= rob_tag;
                 rob_tag <= rob_tag + 1;
                 to_rs_pc   <= pc;
+                to_rs_pc_next <= pc_next;
                 if (opcode == 7'b0110011 && func3 == 3'b000 && func7 == 7'b0000000) begin
                     // ADD
                     to_rs_op <= `ADD;
@@ -267,6 +273,164 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                     // $display("0 LEAD D0 : LUI, PC : %h, rob_tag : %d", pc, rob_tag);
                     to_rs_op  <= `LUI;
                     to_rs_imm <= {instruction[31:12], 12'b0};
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b000) begin
+                    // c.addi
+                    // $display("0 LEAD D0 : c.addi, PC : %h, rob_tag : %d", pc, rob_tag);
+                    to_rs_op   <= `ADDI;
+                    to_rs_rs1  <= rd;
+                    to_rs_imm  <= $signed({instruction[12],instruction[6:2]});
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b001) begin
+                    to_rs_op   <= `JAL;
+                    to_rs_rd <= 1;
+                    // $display("0 LEAD D0 : c.jal, PC : %h, rob_tag : %d", pc, rob_tag);
+                    to_rs_imm   <= $signed({instruction[12],instruction[8],instruction[10:9],instruction[6],instruction[7],instruction[2],instruction[11],instruction[5:3],1'b0});
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b010) begin
+                    to_rs_op   <= `ADDI;
+                    to_rs_rs1  <= 0;
+                    // $display("0 LEAD D0 : c.li, PC : %h, rob_tag : %d", pc, rob_tag);
+                    to_rs_imm  <= $signed({instruction[12],instruction[6:2]});
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b011 && (rd != 5'b00010)) begin
+                    to_rs_op   <= `LUI;
+                    to_rs_imm  <= $signed({instruction[12],instruction[6:2],12'b0});
+                    // $display("0 LEAD D0 : c.lui, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b011) begin
+                    to_rs_op   <= `ADDI;
+                    to_rs_rs1  <= 5'b00010;
+                    to_rs_imm  <= $signed({instruction[12],instruction[4:3],instruction[5],instruction[2],instruction[6],4'b0});
+                    // $display("0 LEAD D0 : c.addi16sp, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b100) begin
+                    if (rd[4:3] == 2'b00) begin
+                        to_rs_op   <= `SRLI;
+                        to_rs_rd   <= {2'b01, rd[2:0]};
+                        to_rs_rs1   <= {2'b01, rd[2:0]};
+                        to_rs_imm  <= $unsigned({instruction[12], instruction[6:2]});
+                        // $display("0 LEAD D0 : c.srli, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (rd[4:3] == 2'b01) begin
+                        to_rs_op   <= `SRAI;
+                        to_rs_rd   <= {2'b01, rd[2:0]};
+                        to_rs_rs1   <= {2'b01, rd[2:0]};
+                        to_rs_imm  <= $unsigned({instruction[12], instruction[6:2]});
+                        // $display("0 LEAD D0 : c.srai, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (rd[4:3] == 2'b10) begin
+                        to_rs_op   <= `ANDI;
+                        to_rs_rd   <= {2'b01, rd[2:0]};
+                        to_rs_rs1   <= {2'b01, rd[2:0]};
+                        to_rs_imm  <= $unsigned({instruction[12], instruction[6:2]});
+                        // $display("0 LEAD D0 : c.andi, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (rd[4:3] == 2'b11) begin
+                        if (instruction[12] == 1'b0) begin
+                            if (instruction[6:5] == 2'b00) begin
+                                to_rs_op   <= `SUB;
+                                to_rs_rd   <= {2'b01, rd[2:0]};
+                                to_rs_rs1   <= {2'b01, rd[2:0]};
+                                to_rs_rs2   <= {2'b01, instruction[4:2]};
+                                // $display("0 LEAD D0 : c.sub, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end else if (instruction[6:5] == 2'b01) begin
+                                to_rs_op   <= `XOR;
+                                to_rs_rd   <= {2'b01, rd[2:0]};
+                                to_rs_rs1   <= {2'b01, rd[2:0]};
+                                to_rs_rs2   <= {2'b01, instruction[4:2]};
+                                // $display("0 LEAD D0 : c.xor, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end else if (instruction[6:5] == 2'b10) begin
+                                to_rs_op   <= `OR;
+                                to_rs_rd   <= {2'b01, rd[2:0]};
+                                to_rs_rs1   <= {2'b01, rd[2:0]};
+                                to_rs_rs2   <= {2'b01, instruction[4:2]};
+                                // $display("0 LEAD D0 : c.or, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end else begin
+                                to_rs_op   <= `AND;
+                                to_rs_rd   <= {2'b01, rd[2:0]};
+                                to_rs_rs1   <= {2'b01, rd[2:0]};
+                                to_rs_rs2   <= {2'b01, instruction[4:2]};
+                                // $display("0 LEAD D0 : c.and, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end
+                        end else begin
+                            // $display("error");
+                        end
+                    end
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b101) begin
+                        to_rs_rd <= 0;
+                        to_rs_op <= `JAL;
+                        to_rs_imm <= $signed({instruction[12], instruction[8], instruction[10:9], instruction[6], instruction[7], instruction[2], instruction[11], instruction[5:3], 1'b0});
+                        // $display("0 LEAD D0 : c.j, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b110) begin
+                        to_rs_op <= `BEQ;
+                        to_rs_rs1 <= {2'b01, rd[2:0]};
+                        to_rs_rs2 <= 0;
+                        to_rs_imm <= $signed({instruction[12], instruction[6:5], instruction[2], instruction[11:10], instruction[4:3], 1'b0});
+                        // $display("0 LEAD D0 : c.beq, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b01 && func3_2 == 3'b111) begin
+                        to_rs_op <= `BNE;
+                        to_rs_rs1 <= {2'b01, rd[2:0]};
+                        to_rs_rs2 <= 0;
+                        to_rs_imm <= $signed({instruction[12], instruction[6:5], instruction[2], instruction[11:10], instruction[4:3], 1'b0});
+                        // $display("0 LEAD D0 : c.bne, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b10 && func3_2 == 3'b000) begin
+                        to_rs_op <= `SLLI;
+                        to_rs_rs1 <= rd;
+                        to_rs_imm <= $unsigned({instruction[12], instruction[6:2]});
+                        // $display("0 LEAD D0 : c.slli, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b00 && func3_2 == 3'b000) begin
+                        to_rs_op <= `ADDI;
+                        to_rs_rd <= {2'b01, instruction[4:2]};
+                        to_rs_rs1 <= 5'b00010;
+                        to_rs_imm <= $unsigned({instruction[10:7], instruction[12:11], instruction[5], instruction[6], 2'b00});
+                        // $display("0 LEAD D0 : c.addi4spn, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b00 && func3_2 == 3'b010) begin
+                        to_rs_op <= `LW;
+                        to_lsb <= 1;
+                        to_rs_rd <= {2'b01, instruction[4:2]};
+                        to_rs_rs1 <= {2'b01, instruction[9:7]};
+                        to_rs_imm <= $unsigned({instruction[5], instruction[12:10], instruction[6], 2'b00});
+                        // $display("0 LEAD D0 : c.lw, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b00 && func3_2 == 3'b110) begin
+                        to_rs_op <= `SW;
+                        to_lsb <= 1;
+                        to_rs_rs1 <= {2'b01, instruction[9:7]};
+                        to_rs_rs2 <= {2'b01, instruction[4:2]};
+                        to_rs_imm <= $unsigned({instruction[5], instruction[12:10], instruction[6], 2'b00});
+                        // $display("0 LEAD D0 : c.sw, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b10 && func3_2 == 3'b100) begin
+                        if (instruction[6:2] == 5'b00000) begin
+                            if (instruction[12]==0) begin
+                                to_rs_op <= `JALR;
+                                to_rs_rd <= 0;
+                                to_rs_rs1 <= rd;
+                                to_rs_imm <= 0;
+                                // $display("0 LEAD D0 : c.jr, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end else begin
+                                to_rs_op <= `JALR;
+                                to_rs_rd <= 1;
+                                to_rs_rs1 <= rd;
+                                to_rs_imm <= 0;
+                                // $display("0 LEAD D0 : c.jalr, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end
+                        end else begin
+                            if (instruction[12] ==0) begin
+                                to_rs_op <= `ADD;
+                                to_rs_rs1 <= 0;
+                                to_rs_rs2 <= instruction[6:2];
+                                // $display("0 LEAD D0 : mv, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end else begin
+                                to_rs_op <= `ADD;
+                                to_rs_rs1 <= rd;
+                                to_rs_rs2 <= instruction[6:2];
+                                // $display("0 LEAD D0 : add, PC : %h, rob_tag : %d", pc, rob_tag);
+                            end
+                        end
+                    end else if (opcode2 == 2'b10 && func3_2 == 3'b010) begin
+                        to_rs_op  <= `LW;
+                        to_lsb <= 1;
+                        to_rs_rs1 <= 2;
+                        to_rs_imm <= $unsigned({instruction[3:2], instruction[12], instruction[6:4], 2'b00});
+                        // $display("0 LEAD D0 : c.lwsp, PC : %h, rob_tag : %d", pc, rob_tag);
+                    end else if (opcode2 == 2'b10 && func3_2 == 3'b110) begin   
+                        to_rs_op  <= `SW;
+                        to_lsb <= 1;
+                        to_rs_rs1 <= 2;
+                        to_rs_rs2 <= instruction[6:2];
+                        to_rs_imm <= $unsigned({instruction[8:7], instruction[12:9], 2'b00});
+                        // $display("0 LEAD D0 : c.swsp, PC : %h, rob_tag : %d", pc, rob_tag);
                     end else begin
                     // Illegal
                     // $display("0 LEAD D0 : ElSE, PC : %h, rob_tag : %d", pc, rob_tag);

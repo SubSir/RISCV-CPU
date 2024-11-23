@@ -12,8 +12,7 @@
 `define BGE_alu 4'b1011
 `define BGEU_alu 4'b1100
 `define BNE_alu 4'b1101
-`define ADD_alu_pc 4'b1110
-`define NOTHING_alu 4'b1111
+`define NOTHING_alu 4'b1110
 
 `define WRITE_rob 3'b000
 `define JUMP_rob 3'b001
@@ -45,6 +44,7 @@ module rs#(parameter ROB_WIDTH = 4,
            input [4:0] from_decoder_rs2,
            input [31:0] from_decoder_imm,
            input [31:0] from_decoder_pc,
+           input [31:0] from_decoder_pc_next,
            input [ROB_WIDTH-1:0] from_decoder_tag,
            input from_reg_file_rs1_flag,
            input from_reg_file_rs2_flag,
@@ -98,6 +98,7 @@ module rs#(parameter ROB_WIDTH = 4,
     reg [ROB_WIDTH-1:0] qk [0:RS_SIZE-1];
     reg [31:0] imm [0:RS_SIZE-1];
     reg [31:0] pc [0:RS_SIZE-1];
+    reg [31:0] pc_next [0:RS_SIZE-1];
     reg alu_double[0:RS_SIZE-1]; // 0 单次 1 双次
     reg [ROB_WIDTH-1:0] rob_tag [0:RS_SIZE-1];
     reg reorder_busy [0:31];
@@ -177,6 +178,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             rob_tag[i]    <= from_decoder_tag;
                             op_lsb[i]     <= `LB_lsb;
                             pc[i]         <= from_decoder_pc;
+                            pc_next[i]         <= from_decoder_pc_next;
                             if (from_decoder_op == `ADD) begin
                                 // $display("0 CLNT R1 index: %d, ADD, rd: %d, rs1: %d, rs2: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_rs2, from_decoder_pc);
                                 op[i] <= `ADD_alu;
@@ -314,7 +316,6 @@ module rs#(parameter ROB_WIDTH = 4,
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BEQ_alu;
-                                pc[i]         <= from_decoder_pc;
                                 imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BGE) begin
                                 // $display("0 CLNT R1 index: %d, BGE, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
@@ -322,7 +323,6 @@ module rs#(parameter ROB_WIDTH = 4,
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BGE_alu;
-                                pc[i]         <= from_decoder_pc;
                                 imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BGEU) begin
                                 // $display("0 CLNT R1 index: %d, BGEU, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
@@ -330,7 +330,6 @@ module rs#(parameter ROB_WIDTH = 4,
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BGEU_alu;
-                                pc[i]         <= from_decoder_pc;
                                 imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BLT) begin
                                 // $display("0 CLNT R1 index: %d, BLT, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
@@ -338,7 +337,6 @@ module rs#(parameter ROB_WIDTH = 4,
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `SLT;
-                                pc[i]         <= from_decoder_pc;
                                 imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BLTU) begin
                                 // $display("0 CLNT R1 index: %d, BLTU, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
@@ -346,7 +344,6 @@ module rs#(parameter ROB_WIDTH = 4,
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `SLTU;
-                                pc[i]         <= from_decoder_pc;
                                 imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `BNE) begin
                                 // $display("0 CLNT R1 index: %d, BNE, rs1: %d, rs2: %d, imm: %d, pc: %h", i, from_decoder_rs1, from_decoder_rs2, from_decoder_imm, from_decoder_pc);
@@ -354,7 +351,6 @@ module rs#(parameter ROB_WIDTH = 4,
                                 alu_double[i] <= 1;
                                 op_rob[i]     <= `JUMP_rob;
                                 op[i]         <= `BNE_alu;
-                                pc[i]         <= from_decoder_pc;
                                 imm[i]    <= from_decoder_imm;
                                 end else if (from_decoder_op == `JAL) begin
                                 // $display("0 CLNT R1 index: %d, JAL, rd: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_imm, from_decoder_pc);
@@ -362,7 +358,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                 rs2_use = 0;
                                 vj[i]     <= from_decoder_pc;
                                 vk[i]     <= from_decoder_imm;
-                                op[i]     <= `ADD_alu_pc;
+                                op[i]     <= `ADD_alu;
                                 op_rob[i] <= `BOTH_rob;
                                 end else if (from_decoder_op == `JALR) begin
                                 // $display("0 CLNT R1 index: %d, JALR, rd: %d, rs1: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
@@ -379,7 +375,7 @@ module rs#(parameter ROB_WIDTH = 4,
                                 vk[i] <= from_decoder_imm;
                                 end else if (from_decoder_op == `AUIPC)begin
                                 // $display("0 CLNT R1 index: %d, AUIPC, rd: %d, imm: %d, pc: %h", i, from_decoder_rd, from_decoder_rs1, from_decoder_imm, from_decoder_pc);
-                                op[i] <= `ADD_alu_pc;
+                                op[i] <= `ADD_alu;
                                 rs1_use = 0;
                                 rs2_use = 0;
                                 vj[i] <= from_decoder_pc;
@@ -464,7 +460,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             // $display("0 SNAP R1 index: %d, JUMP tag: %d, jump: %h", from_alu_index, rob_tag[from_alu_index], from_alu_result);
                             end else if (op_rob[from_alu_index] == `BOTH_rob) begin
                             // $display("0 SNAP R1 index: %d, BOTH tag: %d, rd: %d, wdata: %h, jump: %h", from_alu_index, rob_tag[from_alu_index], rd[from_alu_index], pc[from_alu_index], from_alu_result);
-                            to_rob_wdata <= pc[from_alu_index];
+                            to_rob_wdata <= pc_next[from_alu_index];
                             to_rob_jump  <= from_alu_result;
                             end else if (op_rob[from_alu_index] == `LOAD_rob || op_rob[from_alu_index] == `STORE_rob) begin
                             // $display("0 SNAP R1 index: %d, LS tag: %d, address: %h, wdata: %d, pc: %h", from_alu_index, rob_tag[from_alu_index], from_alu_result, vk[from_alu_index], pc[from_alu_index]);
@@ -481,7 +477,7 @@ module rs#(parameter ROB_WIDTH = 4,
                             to_alu                <= 1;
                             alu_double[from_alu_index] <= 0;
                             to_alu_index          <= from_alu_index;
-                            to_alu_op             <= `ADD_alu_pc;
+                            to_alu_op             <= `ADD_alu;
                             to_alu_a              <= imm[from_alu_index];
                             to_alu_b              <= pc[from_alu_index];
                             end else begin

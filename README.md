@@ -1,10 +1,5 @@
 # RISCV-CPU 2024
 
-
-## CPU 草图
-
-![draft](photo/draft.png)
-
 ## 项目说明
 
 在本项目中，你需要使用 Verilog 语言完成一个简单的 RISC-V CPU 电路设计。
@@ -84,13 +79,14 @@ Verilog 代码会以软件仿真和 FPGA 板两种方式运行。你设计的电
 
 必须要实现的指令为以下 37 个：`LUI`, `AUIPC`, `JAL`, `JALR`, `BEQ`, `BNE`, `BLT`, `BGE`, `BLTU`, `BGEU`, `LB`, `LH`, `LW`, `LBU`, `LHU`, `SB`, `SH`, `SW`, `ADDI`, `SLLI`, `SLTI`, `SLTIU`, `XORI`, `SRLI`, `SRAI`, `ORI`, `ANDI`, `ADD`, `SUB`, `SLL`, `SLT`, `SLTU`, `XOR`, `SRL`, `SRA`, `OR`, `AND`
 
+其中需要实现的变长指令有：`c.addi`，`c.jal`，`c.li`，`c.addi16sp`，`c.lui`，`c.srli`，`c.srai`，`c.andi`，`c.sub`，`c.xor`，`c.or`，`c.and`，`c.j`，`c.beqz`，`c.bnez`，`c.addi4spn`，`c.lw`，`c.sw`，`c.slli`，`c.jr`，`c.mv`，`c.jalr`，`c.add`，`c.lwsp`，`c.swsp`
 ## 帮助
 
 > **这可能对你来说非常重要。**
 
 ### 文档
 
-- 关于RISCV C拓展的相关知识，大家可以参考canvas上相关书籍 和 RISCV官方文档（<https://riscv.org/technical/specifications/）>
+- 关于RISCV C拓展的相关知识，大家可以参考canvas上相关书籍 和 RISCV官方文档（<https://riscv.org/technical/specifications/>）
 
 - RISCV 官网 <https://riscv.org/>
 
@@ -101,6 +97,35 @@ Verilog 代码会以软件仿真和 FPGA 板两种方式运行。你设计的电
 - 非官方 [Read the Docs 文档](https://msyksphinz-self.github.io/riscv-isadoc/html/index.html)
 
 - 非官方 Green Card，[PDF 下载链接](https://inst.eecs.berkeley.edu/~cs61c/fa17/img/riscvcard.pdf)
+
+
+
+### 如何测试
+
+测试分为模拟测试和上板测试两种。
+
+对于模拟测试，我们在 Makefile 中写好了使用 iverilog 来运行的相关命令。你可以在仓库根目录执行
+
+```shell
+make run_sim name=your_testcase_name
+```
+
+来自动编译 Verilog 和运行测试点。`your_testcase_name` 是你想运行的测试点的完整名称或者其子段（只要没有多个文件匹配）。
+命令将从 `testcase/sim` 目录下寻找测试点，并复制到 `testspace` 目录。
+
+如果只想编译，可以使用
+
+```shell
+make build_sim
+```
+
+除了使用 iverilog 外，你也可以使用 Verilator 来进行模拟。你可以自行探索 Verilator 的使用。
+欢迎总结文档，向仓库提交 Pull Request。
+
+在模拟时可能会发现由于出错，运行不停止，这时可以修改 `sim/testbench.v` 中 `$finish` 前的时延来debug。
+注意，在oj提交前，请确保 `$dumpfile("test.vcd");` 已被注释或删除。
+
+对于上板测试，参考范棋珈学长关于WSL2上板指引`doc/qweryy-Vivado-wsl2.md`
 
 ### Q & A
 
@@ -136,9 +161,13 @@ Verilog 代码会以软件仿真和 FPGA 板两种方式运行。你设计的电
 
    用于指示当前hci总线是否为active (可工作)，若否，则cpu应当pause。
 
-8. 当你发现一个测试点在非新烧录的情况下运行会出错，请向助教报告。
+8. **当你发现一个测试点在非新烧录的情况下运行会出错，请向助教报告。**
 
-9. **To be continued...**
+9. **为什么我在跑`make run_sim name=...`的时候显示`riscv64-elf-as: No such file or directory`?**
+
+   首先检查你是否下载并合并了release，其次如果你并没有配置环境，并且确保sim中已经存在了编译好的文件，那么删除Makefile中的`build_sim_test:`后面的`testcases`。
+10. **To be continued...**
+
 
 ----
 

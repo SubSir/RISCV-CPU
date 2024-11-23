@@ -47,13 +47,6 @@ def testcases():
     run_command("make", cwd=TESTCASE_DIR)
 
 
-def no_testcase_name_check(name):
-    if not name:
-        raise ValueError(
-            "name is not set. Usage: python script.py run_sim --name=your_testcase_name"
-        )
-
-
 def build_sim(v_sources):
     testbench_v = os.path.join(SIM_DIR, "testbench.v")
     output_file = os.path.join(TESTSPACE_DIR, "test")
@@ -150,12 +143,10 @@ import time
 
 
 def main():
-
     v_sources = find_v_sources(SRC_DIR)
 
-    no_testcase_name_check("103")
     build_sim(v_sources)
-    build_sim_test("103")
+    build_sim_test("102")
     start_time = time.time()  # 记录开始时间
     run_sim()
     end_time = time.time()  # 记录结束时间

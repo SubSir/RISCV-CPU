@@ -56,6 +56,7 @@ module cpu(
   wire [4:0]           	decoder_to_rs_rs2;
   wire [31:0]          	decoder_to_rs_imm;
   wire [31:0]          	decoder_to_rs_pc;
+  wire [31:0]          	decoder_to_rs_pc_next;
   wire [ROB_WIDTH-1:0] 	decoder_to_rs_tag;
   wire                 	decoder_to_lsb;
   wire [ROB_WIDTH-1:0] 	decoder_to_lsb_tag;
@@ -67,6 +68,7 @@ module cpu(
   wire        	if_to_decoder;
   wire [31:0] 	if_to_decoder_ins;
   wire [31:0] 	if_to_decoder_pc;
+  wire [31:0] 	if_to_decoder_pc_next;
 
   // alu outports wire
   wire  alu_to_rs;
@@ -140,6 +142,7 @@ module cpu(
     .clear        	( clear         ),
     .from_if      	( if_to_decoder       ),
     .pc           	( if_to_decoder_pc            ),
+    .pc_next     	( if_to_decoder_pc_next ),
     .instruction  	( if_to_decoder_ins   ),
     .to_rs        	( decoder_to_rs         ),
     .to_rs_op     	( decoder_to_rs_op      ),
@@ -148,6 +151,7 @@ module cpu(
     .to_rs_rs2    	( decoder_to_rs_rs2     ),
     .to_rs_imm    	( decoder_to_rs_imm     ),
     .to_rs_pc     	( decoder_to_rs_pc      ),
+    .to_rs_pc_next	( decoder_to_rs_pc_next ),
     .to_rs_tag    	( decoder_to_rs_tag     ),
     .to_lsb       	( decoder_to_lsb        ),
     .to_lsb_tag   	( decoder_to_lsb_tag    ),
@@ -175,7 +179,8 @@ module cpu(
     // .mem_a          	( mem_a           ),
     .to_decoder     	( if_to_decoder      ),
     .to_decoder_ins 	( if_to_decoder_ins  ),
-    .to_decoder_pc  	( if_to_decoder_pc   )
+    .to_decoder_pc  	( if_to_decoder_pc   ),
+    .to_decoder_pc_next	( if_to_decoder_pc_next )
   );
     
   ALU #(
@@ -294,6 +299,7 @@ module cpu(
     .from_decoder_rs2    ( decoder_to_rs_rs2    ),
     .from_decoder_imm    ( decoder_to_rs_imm    ),
     .from_decoder_pc     ( decoder_to_rs_pc     ),
+    .from_decoder_pc_next ( decoder_to_rs_pc_next ),
     .from_decoder_tag    ( decoder_to_rs_tag    ),
     .from_reg_file_rs1_flag ( regfile_to_rs_rs1_flag),
     .from_reg_file_rs2_flag ( regfile_to_rs_rs2_flag),

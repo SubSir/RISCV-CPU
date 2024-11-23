@@ -86,7 +86,6 @@ module Lsb#(parameter LSB_SIZE = 4,
                     busy_cnt <= busy_cnt_tmp;
                 end
                 end else begin
-                // $display("0 TERM L3 tick");
                 busy_cnt_tmp = busy_cnt;
                 to_if_bsy <= 1;
                 if (from_decoder) begin

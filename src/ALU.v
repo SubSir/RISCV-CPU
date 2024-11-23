@@ -12,7 +12,6 @@
 `define alu_BGE 4'b1011
 `define alu_BGEU 4'b1100
 `define alu_BNE 4'b1101
-`define alu_ADD_pc 4'b1110
 
 module ALU #(parameter ROB_WIDTH = 4, parameter RS_WIDTH = 2)
             (input clk_in,
@@ -90,10 +89,6 @@ module ALU #(parameter ROB_WIDTH = 4, parameter RS_WIDTH = 2)
                 `alu_BNE: begin
                     result  <= (a != b)? 32'b1 : 32'b0;
                     // $display("0 LOG2 A5 index: %d, a: %d b: %d op: bne result: %d", from_rs_index, a, b, (a != b)? 32'b1 : 32'b0);
-                end
-                `alu_ADD_pc: begin
-                    result <= a + b-32'd4;
-                    // $display("0 LOG2 A5 index: %d, a: %d b: %d op: add_pc result: %h", from_rs_index, a, b, a + b-32'd4);
                 end
             endcase
         end
