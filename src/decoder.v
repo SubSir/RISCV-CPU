@@ -69,7 +69,7 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
     wire[2:0] func3_2 = instruction[15:13];
 
     reg [ROB_WIDTH-1:0] rob_tag;
-    always @(posedge clk_in or negedge rst_in) begin
+    always @(posedge clk_in) begin
         if (rdy_in) begin
             if (rst_in | clear | !from_if) begin
                 to_rs  <= 0;

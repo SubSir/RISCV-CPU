@@ -44,7 +44,7 @@ module rob#(parameter ROB_WIDTH = 4,
     reg [ROB_WIDTH:0] busy_cnt;
     reg [ROB_WIDTH:0] busy_cnt_tmp;
 
-    always @(posedge clk_in or posedge rst_in)begin
+    always @(posedge clk_in)begin
         if (rdy_in) begin
             if (rst_in || clear) begin
                 head           <= 0;

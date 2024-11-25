@@ -44,13 +44,15 @@ module Lsb#(parameter LSB_SIZE = 4,
     reg [2:0] remain;
     reg [7:0] load_data[0:3];
     reg [7:0] store_data[0:3];
-    reg [LSB_WIDTH-1:0]i;
+    integer i;
+    reg [LSB_WIDTH-1:0] index;
     reg next;
+    reg valid;
     reg bubble;
     reg break;
     reg [LSB_WIDTH:0] busy_cnt;
     reg [LSB_WIDTH:0] busy_cnt_tmp;
-    always @(posedge clk_in or posedge rst_in) begin
+    always @(posedge clk_in) begin
         if (rdy_in) begin
             if (rst_in || clear) begin
                 to_if_bsy <= 1;
@@ -65,17 +67,26 @@ module Lsb#(parameter LSB_SIZE = 4,
                     busy_cnt_tmp = 0;
                     if (head != tail) begin
                         break = 0;
-                        for (i = head; i != tail; i = i + 1) begin
-                            if (!break && !execute[i]) begin
-                                tail <= i;
-                                break = 1;
-                            end else if (!break) begin
-                                busy_cnt_tmp = busy_cnt_tmp + 1;
+                        index = head;
+                        valid = 1;
+                        for (i = 0; i < LSB_SIZE; i = i + 1) begin
+                            if (index == tail) begin
+                                valid = 0;
                             end
 
-                            if (execute[i]) begin
-                                next = 0;
+                            if (valid) begin
+                                if (!break && !execute[index]) begin
+                                    tail <= index;
+                                    break = 1;
+                                end else if (!break) begin
+                                    busy_cnt_tmp = busy_cnt_tmp + 1;
+                                end
+
+                                if (execute[index]) begin
+                                    next = 0;
+                                end
                             end
+                            index = index + 1;
                         end
 
                         if (next) begin
@@ -96,8 +107,8 @@ module Lsb#(parameter LSB_SIZE = 4,
                     busy_cnt_tmp = busy_cnt_tmp + 1;
                 end
                 
-                if (from_rs) begin
-                    for(i = head; i != tail; i = i + 1)begin
+                if (from_rs && head != tail) begin
+                    for(i = 0; i < LSB_SIZE; i = i + 1) begin
                         if (tag[i] == from_rs_tag) begin 
                             op[i]       <= from_rs_op;
                             wdata[i]   <= from_rs_wdata;
@@ -107,9 +118,9 @@ module Lsb#(parameter LSB_SIZE = 4,
                     end
                 end
                 
-                if (from_rob) begin
-                    for(i = head; i != tail; i = i + 1)begin
-                        if (tag[i] == from_rob_tag)begin
+                if (from_rob && head != tail) begin
+                    for(i = 0; i < LSB_SIZE; i = i + 1)begin
+                        if (tag[i] == from_rob_tag) begin
                             execute[i] <= 1;
                         end
                     end

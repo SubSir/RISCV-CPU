@@ -17,7 +17,7 @@ module RegisterFile #(parameter RS_WIDTH = 2)(input rst_in,
     reg [31:0] reg_file [0:31];
     integer i;
     
-    always @(posedge clk_in or posedge rst_in) begin
+    always @(posedge clk_in) begin
         if (rdy_in)begin
             to_rs_rs1_flag <= 0;
             to_rs_rs2_flag <= 0;

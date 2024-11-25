@@ -27,7 +27,7 @@ module ALU #(parameter ROB_WIDTH = 4, parameter RS_WIDTH = 2)
              output reg [RS_WIDTH-1:0] to_rs_index,
              output reg [31:0] result);
     
-    always @(posedge clk_in or negedge rst_in) begin
+    always @(posedge clk_in) begin
         if (rst_in | rdy_in & clear | !cal) begin
             to_rs <= 1'b0;
             end else begin

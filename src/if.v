@@ -41,7 +41,7 @@ module IF #(parameter IF_WIDTH = 2,
     wire [TAG_WIDTH-1:0] tag = pc[16:17-TAG_WIDTH];
     wire [CACHE_WIDTH-1:0] cache_index = pc[16-TAG_WIDTH:1];
 
-    always @(posedge clk_in or posedge rst_in)begin
+    always @(posedge clk_in)begin
         if (rdy_in) begin
             if (rst_in || clear) begin
                 head       <= 0;

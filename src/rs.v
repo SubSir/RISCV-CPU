@@ -116,7 +116,7 @@ module rs#(parameter ROB_WIDTH = 4,
     reg [4:0] update_rd;
     reg use_alu;
 
-    always @(posedge clk_in or posedge rst_in) begin
+    always @(posedge clk_in) begin
         if (rdy_in)begin
             if (rst_in || clear) begin
                 for (i = 0; i < RS_SIZE; i = i + 1) begin

@@ -6,7 +6,6 @@ testspace/*
 *.dump
 *.data
 fpga/fpga
-testcase/
 testspace/
 fpga/
 script/
