@@ -1,4 +1,3 @@
-testspace/*
 !.keep
 *.o
 *.vcd
@@ -6,9 +5,9 @@ testspace/*
 *.dump
 *.data
 fpga/fpga
-testspace/
 fpga/
 script/
 in.log
 test.c
 log.log
+testcase/
