@@ -259,7 +259,7 @@ always @*
             d_state = S_DECODE; 
             d_program_finish = 1'b1;
 `ifndef ONLINE_JUDGE
-            // $display("IO:Return");
+            $display("IO:Return");
 `endif
             $finish(0);
           end

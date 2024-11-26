@@ -101,17 +101,18 @@ module rob#(parameter ROB_WIDTH = 4,
                     end
                 end
 
+                if (from_decoder) begin
+                    ready[tail]    <= 0;
+                    tail           <= tail +1;
+                    busy_cnt_tmp = busy_cnt_tmp + 1;
+                end
+
                 if (busy_cnt_tmp + 4 >= ROB_SIZE) begin
                     to_if_bsy <= 0;
                     to_rs      <= 0;
                 end else begin
-                        to_rs          <= 1;
-                        if (from_decoder) begin
-                        to_if_bsy     <= 1;
-                        ready[tail]    <= 0;
-                        tail           <= tail +1;
-                        busy_cnt_tmp = busy_cnt_tmp + 1;
-                    end
+                    to_rs          <= 1;
+                    to_if_bsy     <= 1;
                 end
                 
                 if (from_rs) begin

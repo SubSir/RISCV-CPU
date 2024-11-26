@@ -262,7 +262,7 @@ module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
                     // JAL
                     to_rs_op  <= `JAL;
                     // $display("0 LEAD D0 : JAL, PC : %h, rob_tag : %d", pc, rob_tag);
-                    to_rs_imm <= $signed({instruction[31], instruction[19:12],instruction[20],instruction[31:21],1'b0});
+                    to_rs_imm <= $signed({instruction[31], instruction[19:12],instruction[20],instruction[30:21],1'b0});
                     end else if (opcode == 7'b0010111) begin
                     // AUIPC
                     // $display("0 LEAD D0 : AUIPC, PC : %h, rob_tag : %d", pc, rob_tag);
