@@ -106,13 +106,13 @@ def run_sim():
     run_command(test_exe, cwd=TESTSPACE_DIR)
 
 
-def run_fpga(name):
-    fpga_device = "/dev/ttyUSB1"
+def run_fpga():
+    fpga_device = "COM12"
     fpga_run_mode = "-T"  # or '-I'
 
     test_in = os.path.join(TESTSPACE_DIR, "test.in")
     test_data = os.path.join(TESTSPACE_DIR, "test.data")
-    fpga_script = os.path.join(PWD, "fpga", "fpga")
+    fpga_script = os.path.join(PWD, "fpga", "fpga.exe")
 
     if os.path.exists(test_in):
         command = f"{fpga_script} {test_data} {test_in} {fpga_device} {fpga_run_mode}"
@@ -157,35 +157,35 @@ def main():
 
 
 testlist = [
-    "000",
-    "001",
-    "002",
-    "003",
-    "004",
-    "005",
-    "006",
-    "007",
-    "100",
-    "101",
-    "basicopt",
-    "manyarguments",
-    "statement",
-    "superloop",
-    "uartboom",
-    "103",
-    "102",
+    "array_test1",
+    # "001",
+    # "002",
+    # "003",
+    # "004",
+    # "005",
+    # "006",
+    # "007",
+    # "100",
+    # "101",
+    # "basicopt",
+    # "manyarguments",
+    # "statement",
+    # "superloop",
+    # "uartboom",
+    # "103",
+    # "102",
 ]
 
 if __name__ == "__main__":
     v_sources = find_v_sources(SRC_DIR)
 
-    build_sim(v_sources)
+    # build_sim(v_sources)
 
     for test in testlist:
         print("Start to run test: " + test)
-        build_sim_test(test)
+        build_fpga_test(test)
         start_time = time.time()  # 记录开始时间
-        run_sim()
+        run_fpga()
         end_time = time.time()  # 记录结束时间
         check()
 

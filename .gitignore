@@ -15,3 +15,6 @@ my.ans
 test
 test.ans
 2532/
+.vscode/
+build/
+test.in
