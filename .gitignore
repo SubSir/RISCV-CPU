@@ -18,3 +18,7 @@ test.ans
 .vscode/
 build/
 test.in
+*.bit
+clockInfo.txt
+.Xil/
+serial/

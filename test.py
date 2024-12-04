@@ -34,13 +34,23 @@ def run_command(command, cwd=None):
         print(f"Output: {result.stdout}")
         print(f"Error: {result.stderr}")
         exit(1)
-    out = result.stdout
-    if out == "":
-        return ""
-    out = out.split("IO:Return")[0]
-    out = out.split("VCD info: dumpfile test.vcd opened for output.\n")[1]
+    if result.stdout != "":
+        print(result.stdout)
+
+
+def run_command_OUT(command, cwd=None):
+    result = subprocess.run(
+        command, shell=True, cwd=cwd, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print(f"Error running command: {command}")
+        print(f"Output: {result.stdout}")
+        print(f"Error: {result.stderr}")
+        exit(1)
+    if result.stdout != "":
+        print(result.stdout)
     with open(os.path.join(TESTSPACE_DIR, "my.ans"), "w") as f:
-        f.write(out)
+        f.write(result.stdout)
 
 
 def testcases():
@@ -107,19 +117,23 @@ def run_sim():
 
 
 def run_fpga():
-    fpga_device = "COM12"
+    fpga_device = "/dev/ttyUSB1"
     fpga_run_mode = "-T"  # or '-I'
 
     test_in = os.path.join(TESTSPACE_DIR, "test.in")
     test_data = os.path.join(TESTSPACE_DIR, "test.data")
-    fpga_script = os.path.join(PWD, "fpga", "fpga.exe")
+    fpga_script = os.path.join(PWD, "fpga", "fpga.elf")
 
     if os.path.exists(test_in):
-        command = f"{fpga_script} {test_data} {test_in} {fpga_device} {fpga_run_mode}"
+        command = (
+            f"wsl {fpga_script} {test_data} {test_in} {fpga_device} {fpga_run_mode}"
+        )
     else:
-        command = f"{fpga_script} {test_data} {fpga_device} {fpga_run_mode}"
+        command = f"wsl {fpga_script} {test_data} {fpga_device} {fpga_run_mode}"
 
-    run_command(command, cwd=TESTSPACE_DIR)
+    command = command.replace("\\", "/")
+    command = command.replace("D:/", "/mnt/d/")
+    run_command_OUT(command, cwd=TESTSPACE_DIR)
 
 
 def clean():
@@ -134,9 +148,9 @@ def check():
         my_ans = f1.read()
         test_ans = f2.read()
         if my_ans == test_ans:
-            print("PASS")
+            print("\033[92mPASS\033[0m")
         else:
-            print("FAIL")
+            print("\033[91mFAIL\033[0m")
 
 
 import time
@@ -156,30 +170,58 @@ def main():
     print(f"运行时间: {elapsed_time:.2f} 秒")
 
 
+def gen_bit():
+    command = "vivado -nojournal -nolog -mode batch -script .\script\genbit.tcl"
+    run_command(command, cwd=PWD)
+
+
+def load():
+    command = "vivado -nojournal -nolog -mode batch -script .\script\program.tcl -tclarg .\wkp.bit"
+    run_command(command, cwd=PWD)
+
+
+def port():
+    command = "usbipd attach --wsl --busid 2-3"
+    run_command(command, cwd=PWD)
+
+
+def port_close():
+    command = "usbipd detach --busid 2-3"
+    run_command(command, cwd=PWD)
+
+
 testlist = [
     "array_test1",
-    # "001",
-    # "002",
-    # "003",
-    # "004",
-    # "005",
-    # "006",
-    # "007",
-    # "100",
-    # "101",
-    # "basicopt",
-    # "manyarguments",
-    # "statement",
-    # "superloop",
-    # "uartboom",
-    # "103",
-    # "102",
+    "array_test2",
+    "expr",
+    "gcd",
+    "hanoi",
+    "heart",
+    "looper",
+    "lvalue",
+    "magic",
+    "multiarray",
+    "pi",
+    "qsort",
+    "queens",
+    "statement_test",
+    "superloop",
+    "tak" "testsleep",
+    "uartboom" "basicopt",
+    "bulgarian",
+    "manyarguments",
 ]
 
 if __name__ == "__main__":
-    v_sources = find_v_sources(SRC_DIR)
+    # print("Start to gen bit")
+    # gen_bit()
 
-    # build_sim(v_sources)
+    # print("Start to load bit")
+    # port_close()
+    # load()
+
+    # print("Start to connect to port")
+    # port()
 
     for test in testlist:
         print("Start to run test: " + test)
