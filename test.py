@@ -160,14 +160,14 @@ def main():
     v_sources = find_v_sources(SRC_DIR)
 
     build_sim(v_sources)
-    build_sim_test("007")
-    start_time = time.time()  # 记录开始时间
-    run_sim()
-    end_time = time.time()  # 记录结束时间
-    check()
+    build_sim_test("hanoi")
+    # start_time = time.time()  # 记录开始时间
+    # run_sim()
+    # end_time = time.time()  # 记录结束时间
+    # check()
 
-    elapsed_time = end_time - start_time  # 计算运行时间
-    print(f"运行时间: {elapsed_time:.2f} 秒")
+    # elapsed_time = end_time - start_time  # 计算运行时间
+    # print(f"运行时间: {elapsed_time:.2f} 秒")
 
 
 def gen_bit():
@@ -229,7 +229,9 @@ def test():
 
 
 if __name__ == "__main__":
-    gen_bit()
+    main()
+
+    # gen_bit()
 
     # load()
 

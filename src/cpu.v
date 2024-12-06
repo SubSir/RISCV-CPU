@@ -63,8 +63,8 @@ module cpu(
   wire                 	decoder_to_rob;
 
   // if outports wire
-  // wire        	mem_wr;
-  // wire [31:0] 	mem_a;
+  wire        	if_mem_wr;
+  wire [31:0] 	if_mem_a;
   wire        	if_to_decoder;
   wire [31:0] 	if_to_decoder_ins;
   wire [31:0] 	if_to_decoder_pc;
@@ -76,9 +76,9 @@ module cpu(
   wire [31:0] 	result;
 
   // lsb outports wire
-  // wire [7:0]    mem_dout;
-  // wire [31:0]   mem_a;
-  // wire          mem_wr;
+  wire [7:0]    lsb_mem_dout;
+  wire [31:0]   lsb_mem_a;
+  wire          lsb_mem_wr;
   wire          lsb_to_if;
   wire          lsb_to_if_bsy;
   wire          lsb_to_rob;
@@ -176,8 +176,8 @@ module cpu(
     .from_rs_bsy      	( rs_to_if_bsy     ),
     .from_rob_bsy      	( rob_to_if_bsy     ),
     .io_buffer_full  	( io_buffer_full   ),
-    // .mem_wr         	( mem_wr          ),
-    // .mem_a          	( mem_a           ),
+    .mem_wr         	( if_mem_wr          ),
+    .mem_a          	( if_mem_a           ),
     .to_decoder     	( if_to_decoder      ),
     .to_decoder_ins 	( if_to_decoder_ins  ),
     .to_decoder_pc  	( if_to_decoder_pc   ),
@@ -222,9 +222,9 @@ module cpu(
     .from_rob_tag    ( rob_to_lsb_tag    ),
     .io_buffer_full  	( io_buffer_full   ),
     .mem_din         ( mem_din         ),
-    // .mem_dout        ( mem_dout        ),
-    // .mem_a           ( mem_a           ),
-    // .mem_wr          ( mem_wr          ),
+    .mem_dout        ( lsb_mem_dout        ),
+    .mem_a           ( lsb_mem_a           ),
+    .mem_wr          ( lsb_mem_wr          ),
     .to_if           ( lsb_to_if           ),
     .to_if_bsy      ( lsb_to_if_bsy      ),
     .to_rob          ( lsb_to_rob          ),
@@ -342,12 +342,12 @@ module cpu(
 
   always@(*)begin
     if (!lsb_to_if) begin
-      mem_wr_reg = u_IF.mem_wr;
-      mem_a_reg = u_IF.mem_a;
+      mem_wr_reg = if_mem_wr;
+      mem_a_reg = if_mem_a;
     end else begin
-      mem_wr_reg = u_Lsb.mem_wr;
-      mem_a_reg = u_Lsb.mem_a;
-      mem_dout_reg = u_Lsb.mem_dout;
+      mem_wr_reg = lsb_mem_wr;
+      mem_a_reg = lsb_mem_a;
+      mem_dout_reg = lsb_mem_dout;
     end
   end
 
