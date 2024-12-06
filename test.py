@@ -160,7 +160,7 @@ def main():
     v_sources = find_v_sources(SRC_DIR)
 
     build_sim(v_sources)
-    build_sim_test("hanoi")
+    build_sim_test("007")
     # start_time = time.time()  # 记录开始时间
     # run_sim()
     # end_time = time.time()  # 记录结束时间
@@ -209,7 +209,8 @@ testlist = [
     "statement_test",
     "superloop",
     "tak" "testsleep",
-    "uartboom" "basicopt",
+    "uartboom",
+    "basicopt",
     "bulgarian",
     "manyarguments",
 ]

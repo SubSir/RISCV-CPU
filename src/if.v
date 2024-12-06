@@ -13,7 +13,6 @@ module IF #(parameter IF_WIDTH = 2,
             input from_rs_bsy,
             input from_lsb_bsy,
             input from_rob_bsy,
-            input io_buffer_full,
             output reg mem_wr,
             output reg [31:0] mem_a,
             output reg to_decoder,
@@ -43,7 +42,7 @@ module IF #(parameter IF_WIDTH = 2,
     wire [CACHE_WIDTH-1:0] cache_index = pc[16-TAG_WIDTH:1];
 
     always @(posedge clk_in)begin
-        if (rdy_in & !io_buffer_full) begin
+        if (rdy_in) begin
             if (rst_in || clear) begin
                 head       <= 0;
                 tail       <= 0;

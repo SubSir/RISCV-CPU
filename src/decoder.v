@@ -37,7 +37,7 @@
 `define LUI 6'b100100
 `define NOTHING 6'b100101
 
-module Decoder #(parameter ROB_WIDTH = 4, parameter ROB_SIZE = 16)
+module Decoder #(parameter ROB_WIDTH = 4)
                 (input rst_in,
                  input clk_in,
                  input rdy_in,

@@ -54,7 +54,7 @@ module Lsb#(parameter LSB_SIZE = 4,
     reg [LSB_WIDTH:0] busy_cnt;
     reg [LSB_WIDTH:0] busy_cnt_tmp;
     always @(posedge clk_in) begin
-        if (rdy_in & !io_buffer_full) begin
+        if (rdy_in) begin
             if (rst_in || clear) begin
                 to_if_bsy <= 1;
                 to_rob     <= 0;
@@ -101,6 +101,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                 busy_cnt_tmp = busy_cnt;
                 to_if_bsy <= 1;
                 if (from_decoder) begin
+                    // $display("0 LEAD L3 tag: %d, index: %d", from_decoder_tag, tail);
                     tag[tail]     <= from_decoder_tag;
                     tail          <= tail +1;
                     ready[tail]   <= 0;
@@ -109,14 +110,20 @@ module Lsb#(parameter LSB_SIZE = 4,
                 end
                 
                 if (from_rs && head != tail) begin
+                    // $display("0 VOTE L3 head:  %d, tail: %d", head, tail);
                     for(i = 0; i < LSB_SIZE; i = i + 1) begin
-                        if (tag[i] == from_rs_tag) begin 
+                        if (tag[i] == from_rs_tag && i != tail) begin 
+                            // $display("0 VOTE L3 op: %d, tag: %d, wdata: %d, address: %d, i: ", from_rs_op, from_rs_tag,from_rs_wdata, from_rs_address, i);
                             op[i]       <= from_rs_op;
                             wdata[i]   <= from_rs_wdata;
                             address[i] <= from_rs_address;
                             ready[i] <= 1;
                         end
                     end
+                end
+
+                if (from_rs && head == tail) begin
+                    // $display("WTF");
                 end
                 
                 if (from_rob && head != tail) begin
@@ -176,7 +183,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                         to_if <= 1;
                         bubble <= 1;
                         mem_a <= address[head];
-                        if (op[head] == `lsb_LB || op[head] == `lsb_LBU) begin
+                        if ((op[head] == `lsb_LB || op[head] == `lsb_LBU) && !(io_buffer_full && address[head] == 32'h30000)) begin
                             // $display("0 TERM L3 tag: %d, begin lb, address: %h", tag[head], address[head]);
                             remain <= 3'd1;
                             mem_wr <= 0;
@@ -188,7 +195,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                             // $display("0 TERM L3 tag: %d, begin lw, address: %h", tag[head], address[head]);
                             remain <= 3'd4;
                             mem_wr <= 0;
-                            end else if (execute[head] && op[head] == `lsb_SB) begin
+                            end else if (execute[head] && op[head] == `lsb_SB && !(io_buffer_full && address[head] == 32'h30000)) begin
                             // $display("0 TERM L3 tag: %d, begin sb, address: %h, wdata: %d", tag[head], address[head], wdata[head][7:0]);
                             remain        <= 3'd0;
                             mem_dout <= wdata[head][7:0];
