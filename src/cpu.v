@@ -28,17 +28,17 @@ module cpu(
 // - 0x30004 read: read clocks passed since cpu starts (in dword, 4 bytes)
 // - 0x30004 write: indicates program stop (will output '\0' through uart tx)
 
-  parameter CACHE_WIDTH = 6;
-  parameter CACHE_SIZE = 64;
+  parameter CACHE_WIDTH = 5;
+  parameter CACHE_SIZE = 32;
   parameter TAG_WIDTH = 16-CACHE_WIDTH;
-  parameter IF_WIDTH = 6;
-  parameter IF_SIZE = 64;
-  parameter ROB_SIZE = 64;
-  parameter ROB_WIDTH = 6;
-  parameter RS_WIDTH = 6;
-  parameter RS_SIZE = 64;
-  parameter LSB_SIZE = 32;
-  parameter LSB_WIDTH = 5;
+  parameter IF_WIDTH = 5;
+  parameter IF_SIZE = 32;
+  parameter ROB_SIZE = 32;
+  parameter ROB_WIDTH = 5;
+  parameter RS_WIDTH = 5;
+  parameter RS_SIZE = 32;
+  parameter LSB_SIZE = 16;
+  parameter LSB_WIDTH = 4;
 
   reg mem_wr_reg;
   reg [31:0] mem_a_reg;
@@ -343,6 +343,7 @@ module cpu(
     if (!lsb_to_if) begin
       mem_wr_reg = if_mem_wr;
       mem_a_reg = if_mem_a;
+      mem_dout_reg = 8'b0;
     end else begin
       mem_wr_reg = lsb_mem_wr;
       mem_a_reg = lsb_mem_a;
