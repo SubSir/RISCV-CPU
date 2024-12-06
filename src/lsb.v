@@ -24,6 +24,7 @@ module Lsb#(parameter LSB_SIZE = 4,
             input from_rob,
             input [ROB_WIDTH-1:0]from_rob_tag,
             input [7:0] mem_din,
+            input io_buffer_full,
             output reg [7:0] mem_dout,
             output reg [31:0] mem_a,
             output reg mem_wr,
@@ -53,7 +54,7 @@ module Lsb#(parameter LSB_SIZE = 4,
     reg [LSB_WIDTH:0] busy_cnt;
     reg [LSB_WIDTH:0] busy_cnt_tmp;
     always @(posedge clk_in) begin
-        if (rdy_in) begin
+        if (rdy_in & !io_buffer_full) begin
             if (rst_in || clear) begin
                 to_if_bsy <= 1;
                 to_rob     <= 0;

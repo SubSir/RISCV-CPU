@@ -27,7 +27,7 @@ def find_v_sources(src_dir):
 
 def run_command(command, cwd=None):
     result = subprocess.run(
-        command, shell=True, cwd=cwd, capture_output=True, text=True
+        command, shell=True, cwd=cwd, capture_output=True, text=True, errors="replace"
     )
     if result.returncode != 0:
         print(f"Error running command: {command}")
@@ -40,7 +40,7 @@ def run_command(command, cwd=None):
 
 def run_command_OUT(command, cwd=None):
     result = subprocess.run(
-        command, shell=True, cwd=cwd, capture_output=True, text=True
+        command, shell=True, cwd=cwd, capture_output=True, text=True, errors="replace"
     )
     if result.returncode != 0:
         print(f"Error running command: {command}")
@@ -171,22 +171,24 @@ def main():
 
 
 def gen_bit():
+    gen_bit_path = "gen.bit"
+    if os.path.exists(gen_bit_path):
+        os.remove(gen_bit_path)
+        print(f"Deleted existing {gen_bit_path}")
+    print("Start to gen bit")
     command = "vivado -nojournal -nolog -mode batch -script .\script\genbit.tcl"
     run_command(command, cwd=PWD)
 
 
 def load():
-    command = "vivado -nojournal -nolog -mode batch -script .\script\program.tcl -tclarg .\wkp.bit"
-    run_command(command, cwd=PWD)
-
-
-def port():
-    command = "usbipd attach --wsl --busid 2-3"
-    run_command(command, cwd=PWD)
-
-
-def port_close():
+    print("Start to close port")
     command = "usbipd detach --busid 2-3"
+    run_command(command, cwd=PWD)
+    print("Start to load bit")
+    command = "vivado -nojournal -nolog -mode batch -script .\script\program.tcl -tclarg .\gen.bit"
+    run_command(command, cwd=PWD)
+    print("Start to connect to port")
+    command = "usbipd attach --wsl --busid 2-3"
     run_command(command, cwd=PWD)
 
 
@@ -212,17 +214,8 @@ testlist = [
     "manyarguments",
 ]
 
-if __name__ == "__main__":
-    # print("Start to gen bit")
-    # gen_bit()
 
-    # print("Start to load bit")
-    # port_close()
-    # load()
-
-    # print("Start to connect to port")
-    # port()
-
+def test():
     for test in testlist:
         print("Start to run test: " + test)
         build_fpga_test(test)
@@ -233,3 +226,11 @@ if __name__ == "__main__":
 
         elapsed_time = end_time - start_time  # 计算运行时间
         print(f"运行时间: {elapsed_time:.2f} 秒")
+
+
+if __name__ == "__main__":
+    gen_bit()
+
+    # load()
+
+    # test()
