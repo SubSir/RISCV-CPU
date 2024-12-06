@@ -128,7 +128,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                 
                 if (from_rob && head != tail) begin
                     for(i = 0; i < LSB_SIZE; i = i + 1)begin
-                        if (tag[i] == from_rob_tag) begin
+                        if (tag[i] == from_rob_tag && i != tail) begin
                             execute[i] <= 1;
                         end
                     end
