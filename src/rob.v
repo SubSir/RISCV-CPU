@@ -44,94 +44,105 @@ module rob#(parameter ROB_WIDTH = 4,
     reg [ROB_WIDTH:0] busy_cnt_tmp;
 
     always @(posedge clk_in)begin
-        if (rdy_in) begin
-            if (rst_in || clear) begin
-                head           <= 0;
-                tail           <= 0;
-                to_if_bsy     <= 1;
-                to_lsb         <= 0;
-                to_rs          <= 0;
-                to_rs_update   <= 0;
-                clear          <= 0;
-                busy_cnt       <= 0;
-                end else begin
-                busy_cnt_tmp = busy_cnt;
-                to_lsb  <= 0;
-                to_reg_file       <= 0;
-                to_rs_update   <= 0;
-                if (head != tail) begin
-                    if (ready[head]) begin
-                        clear              <= 0;
-                        to_rs_update_order <= head;
-                        to_rs_update_wdata <= wdata[head];
-                        head               <= head + 1;
-                        busy_cnt_tmp = busy_cnt_tmp - 1;
-                        if (op[head] == `WRITE) begin
-                                // $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
-                                to_rs_update       <= 1;
-                                to_reg_file       <= 1;
-                                to_reg_file_rd    <= rd[head];
-                                to_reg_file_wdata <= wdata[head];
-                            end else if (op[head] == `JUMP) begin
-                                // $display("0 CMIT R2 JUMP tag: %d, jump: %h", head, jump[head]);
-                                clear    <= 1;
-                                to_if_pc <= jump[head];
-                            end else if (op[head] == `BOTH) begin
-                                // $display("0 CMIT R2 BOTH tag: %d, rd: %d, wdata: %h, jump: %h", head, rd[head], wdata[head], jump[head]);
-                                to_rs_update       <= 1;
-                                to_reg_file       <= 1;
-                                to_reg_file_rd    <= rd[head];
-                                to_reg_file_wdata <= wdata[head];
-                                clear             <= 1;
-                                to_if_pc          <= jump[head];
-                            end else if (op[head] == `LOAD) begin
-                                // $display("0 CMIT R2 LOAD tag: %d, rd: %d, data: %d", head, rd[head], wdata[head]);
-                                to_rs_update       <= 1;
-                                to_reg_file       <= 1;
-                                to_reg_file_rd    <= rd[head];
-                                to_reg_file_wdata <= wdata[head];
-                            end else if (op[head] == `STORE) begin
-                                // $display("0 CMIT R2 STORE tag: %d", head);
-                                to_lsb     <= 1;
-                                to_lsb_tag <= head;
-                            end else begin
-                                // $display("0 CMIT R2 NOTHING tag: %d", head);
+        if (rst_in) begin
+            head           <= 0;
+            tail           <= 0;
+            to_if_bsy     <= 1;
+            to_lsb         <= 0;
+            to_rs          <= 0;
+            to_rs_update   <= 0;
+            clear          <= 0;
+            busy_cnt       <= 0;
+        end else begin
+            if (rdy_in) begin
+                if (clear) begin
+                    head           <= 0;
+                    tail           <= 0;
+                    to_if_bsy     <= 1;
+                    to_lsb         <= 0;
+                    to_rs          <= 0;
+                    to_rs_update   <= 0;
+                    clear          <= 0;
+                    busy_cnt       <= 0;
+                    end else begin
+                    busy_cnt_tmp = busy_cnt;
+                    to_lsb  <= 0;
+                    to_reg_file       <= 0;
+                    to_rs_update   <= 0;
+                    if (head != tail) begin
+                        if (ready[head]) begin
+                            clear              <= 0;
+                            to_rs_update_order <= head;
+                            to_rs_update_wdata <= wdata[head];
+                            head               <= head + 1;
+                            busy_cnt_tmp = busy_cnt_tmp - 1;
+                            if (op[head] == `WRITE) begin
+                                    // $display("0 CMIT R2 WRITE tag: %d, rd: %d, wdata: %d", head, rd[head], wdata[head]);
+                                    to_rs_update       <= 1;
+                                    to_reg_file       <= 1;
+                                    to_reg_file_rd    <= rd[head];
+                                    to_reg_file_wdata <= wdata[head];
+                                end else if (op[head] == `JUMP) begin
+                                    // $display("0 CMIT R2 JUMP tag: %d, jump: %h", head, jump[head]);
+                                    clear    <= 1;
+                                    to_if_pc <= jump[head];
+                                end else if (op[head] == `BOTH) begin
+                                    // $display("0 CMIT R2 BOTH tag: %d, rd: %d, wdata: %h, jump: %h", head, rd[head], wdata[head], jump[head]);
+                                    to_rs_update       <= 1;
+                                    to_reg_file       <= 1;
+                                    to_reg_file_rd    <= rd[head];
+                                    to_reg_file_wdata <= wdata[head];
+                                    clear             <= 1;
+                                    to_if_pc          <= jump[head];
+                                end else if (op[head] == `LOAD) begin
+                                    // $display("0 CMIT R2 LOAD tag: %d, rd: %d, data: %d", head, rd[head], wdata[head]);
+                                    to_rs_update       <= 1;
+                                    to_reg_file       <= 1;
+                                    to_reg_file_rd    <= rd[head];
+                                    to_reg_file_wdata <= wdata[head];
+                                end else if (op[head] == `STORE) begin
+                                    // $display("0 CMIT R2 STORE tag: %d", head);
+                                    to_lsb     <= 1;
+                                    to_lsb_tag <= head;
+                                end else begin
+                                    // $display("0 CMIT R2 NOTHING tag: %d", head);
+                            end
                         end
                     end
-                end
 
-                if (from_decoder) begin
-                    ready[tail]    <= 0;
-                    tail           <= tail +1;
-                    busy_cnt_tmp = busy_cnt_tmp + 1;
-                end
-
-                if (busy_cnt_tmp + 4 >= ROB_SIZE) begin
-                    to_if_bsy <= 0;
-                    to_rs      <= 0;
-                end else begin
-                    to_rs          <= 1;
-                    to_if_bsy     <= 1;
-                end
-                
-                if (from_rs) begin
-                    if (from_rs_op == `LOAD) begin
-                        ready[from_rs_tag]    <= 0;
-                    end else begin
-                        ready[from_rs_tag]    <= 1;
+                    if (from_decoder) begin
+                        ready[tail]    <= 0;
+                        tail           <= tail +1;
+                        busy_cnt_tmp = busy_cnt_tmp + 1;
                     end
-                    op[from_rs_tag]       <= from_rs_op;
-                    rd[from_rs_tag]       <= from_rs_rd;
-                    wdata[from_rs_tag]    <= from_rs_wdata;
-                    jump[from_rs_tag]     <= from_rs_jump;
-                end
 
-                if (from_lsb) begin
-                    ready[from_lsb_tag] <= 1;
-                    wdata[from_lsb_tag] <= from_lsb_wdata;
-                end
+                    if (busy_cnt_tmp + 4 >= ROB_SIZE) begin
+                        to_if_bsy <= 0;
+                        to_rs      <= 0;
+                    end else begin
+                        to_rs          <= 1;
+                        to_if_bsy     <= 1;
+                    end
+                    
+                    if (from_rs) begin
+                        if (from_rs_op == `LOAD) begin
+                            ready[from_rs_tag]    <= 0;
+                        end else begin
+                            ready[from_rs_tag]    <= 1;
+                        end
+                        op[from_rs_tag]       <= from_rs_op;
+                        rd[from_rs_tag]       <= from_rs_rd;
+                        wdata[from_rs_tag]    <= from_rs_wdata;
+                        jump[from_rs_tag]     <= from_rs_jump;
+                    end
 
-                busy_cnt <= busy_cnt_tmp;
+                    if (from_lsb) begin
+                        ready[from_lsb_tag] <= 1;
+                        wdata[from_lsb_tag] <= from_lsb_wdata;
+                    end
+
+                    busy_cnt <= busy_cnt_tmp;
+                end
             end
         end
     end

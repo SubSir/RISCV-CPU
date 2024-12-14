@@ -161,13 +161,13 @@ def main():
 
     build_sim(v_sources)
     build_sim_test("006")
-    # start_time = time.time()  # 记录开始时间
-    # run_sim()
-    # end_time = time.time()  # 记录结束时间
-    # check()
+    start_time = time.time()  # 记录开始时间
+    run_sim()
+    end_time = time.time()  # 记录结束时间
+    check()
 
-    # elapsed_time = end_time - start_time  # 计算运行时间
-    # print(f"运行时间: {elapsed_time:.2f} 秒")
+    elapsed_time = end_time - start_time  # 计算运行时间
+    print(f"运行时间: {elapsed_time:.2f} 秒")
 
 
 def gen_bit():
@@ -175,9 +175,9 @@ def gen_bit():
     if os.path.exists(gen_bit_path):
         os.remove(gen_bit_path)
         print(f"Deleted existing {gen_bit_path}")
-    print("Start to gen bit")
-    command = "vivado -nojournal -nolog -mode batch -script .\script\genbit.tcl"
-    run_command(command, cwd=PWD)
+    # print("Start to gen bit")
+    # command = "vivado -nojournal -nolog -mode batch -script .\script\genbit.tcl"
+    # run_command(command, cwd=PWD)
 
 
 def load():
@@ -193,30 +193,32 @@ def load():
 
 
 testlist = [
-    "array_test1",
-    "array_test2",
-    "expr",
-    "gcd",
-    "hanoi",
-    "heart",
-    "looper",
-    "lvalue",
-    "magic",
-    "multiarray",
-    "pi",
-    "qsort",
-    "queens",
-    "statement_test",
-    "superloop",
-    "tak" "testsleep",
-    "uartboom",
+    # "array_test1",
+    # "array_test2",
+    # "expr",
+    # "gcd",
+    # # "heart",
+    # "lvalue",
+    # "magic",
+    # "multiarray",
+    # "pi",
+    # "qsort",
+    # "queens",
+    # "superloop",
+    # # "testsleep",
     "basicopt",
     "bulgarian",
     "manyarguments",
+    "statement_test",
+    "uartboom",
+    "tak",
+    "hanoi",
 ]
 
 
 def test():
+    load()
+    time.sleep(1)
     for test in testlist:
         print("Start to run test: " + test)
         build_fpga_test(test)
@@ -230,10 +232,10 @@ def test():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
 
     # gen_bit()
 
     # load()
 
-    # test()
+    test()

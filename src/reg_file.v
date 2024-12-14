@@ -18,14 +18,16 @@ module RegisterFile #(parameter RS_WIDTH = 2)(input rst_in,
     integer i;
     
     always @(posedge clk_in) begin
-        if (rdy_in)begin
+        if (rst_in) begin
             to_rs_rs1_flag <= 0;
             to_rs_rs2_flag <= 0;
-            if (rst_in) begin
-                for (i = 0; i != 32; i = i + 1) begin
-                    reg_file[i] <= 32'b0;
-                end
-                end else begin
+            for (i = 0; i != 32; i = i + 1) begin
+                reg_file[i] <= 32'b0;
+            end
+        end else begin
+            if (rdy_in)begin
+                to_rs_rs1_flag <= 0;
+                to_rs_rs2_flag <= 0;
                 if (from_rs_rs1_flag) begin
                     // $display("0 LOG1 R4 rs ask for %d, it's %d, index: %d", from_rs_rs1, reg_file[from_rs_rs1],from_rs_index);
                     to_rs_rs1_flag <= 1;
