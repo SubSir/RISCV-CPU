@@ -1,67 +1,74 @@
 PWD := $(CURDIR)
 
-# riscv 工具链前缀
-RISCV_TOOLCHAIN ?= riscv64-elf-
+SRC_DIR := $(PWD)/src
+TESTSPACE_DIR := $(PWD)/testspace
+TESTCASE_DIR := $(PWD)/testcase
 
-TESTCASE_SRCS := $(shell find $(PWD) -name '*.c')
+SIM_TESTCASE_DIR := $(TESTCASE_DIR)/sim
+FPGA_TESTCASE_DIR := $(TESTCASE_DIR)/fpga
 
-DATAFILES := $(TESTCASE_SRCS:.c=.data)
-DUMPFILES := $(TESTCASE_SRCS:.c=.dump)
+SIM_DIR := $(PWD)/sim
 
-.SECONDARY: $(TESTCASE_SRCS:.c=.elf)
+V_SOURCES := $(shell find $(SRC_DIR) -name '*.v')
 
-# compile tools
-AS := $(RISCV_TOOLCHAIN)as
-CC := $(RISCV_TOOLCHAIN)gcc
-LD := $(RISCV_TOOLCHAIN)ld
-OBJCOPY := $(RISCV_TOOLCHAIN)objcopy
-OBJDUMP := $(RISCV_TOOLCHAIN)objdump
+ONLINE_JUDGE ?= false
 
-# compile options
-# Link library least support: [ rv32i rv32iac rv32im rv32imac rv32imafc rv64imac rv64imafdc ] if use the given dockerfile(archlinux with riscv64-elf-newlib)
-# other option such as _zicsr might be available as well
-MARCH_STRING := rv32ic
-ABI_STRING := ilp32
+IV_FLAGS := -I$(SRC_DIR) -Wall -Wno-timescale
 
-AS_FLAGS := -march=$(MARCH_STRING)
-C_FLAGS := -I $(PWD) -O2 -march=$(MARCH_STRING) -mabi=$(ABI_STRING) -g -std=c17
+ifeq ($(ONLINE_JUDGE), true)
+IV_FLAGS += -D ONLINE_JUDGE
+all: build_sim
+	@cp $(TESTSPACE_DIR)/test $(PWD)/code
+else
+all: testcases build_sim
+endif
 
-all: $(DATAFILES) $(DUMPFILES)
+testcases:
+	@make -C $(TESTCASE_DIR)
 
-# 生成.dump文件
-%.dump: %.elf
-	@$(OBJDUMP) -D $< > $@
+_no_testcase_name_check:
+ifndef name
+	$(error name is not set. Usage: make run_sim name=your_testcase_name)
+endif
 
-# 生成.data文件，根据文件名包含fpga决定输出格式
-%.data: %.elf
-	@if echo "$@" | grep -q "fpga"; then \
-		$(OBJCOPY) -O binary $< $@; \
-	else \
-		$(OBJCOPY) -O verilog $< $@; \
-	fi
+$(TESTSPACE_DIR):
+	@mkdir -p $(TESTSPACE_DIR)
 
-# 链接.o生成.elf文件
-# 这里使用 gcc 调用 ld 而非直接调用 ld
-# 否则会有一些链接错误
-%.elf: $(PWD)/rom.o %.o
-	@$(CC) $(C_FLAGS) -T $(PWD)/memory.ld $^ -o $@ -nostdlib -lc -lm -lgcc -Wl,--no-warn-rwx-segments
+build_sim: $(SIM_DIR)/testbench.v $(V_SOURCES) $(TESTSPACE_DIR)
+	@iverilog $(IV_FLAGS) -o $(TESTSPACE_DIR)/test $(SIM_DIR)/testbench.v $(V_SOURCES)
 
-# 编译.c文件
-%.o: %.c
-	@if echo "$@" | grep -q "fpga"; then \
-		$(CC) -c $< -o $@ $(C_FLAGS); \
-	else \
-		$(CC) -c $< -o $@ $(C_FLAGS) -DSIM; \
-	fi
+build_sim_test: testcases _no_testcase_name_check
+	@cp $(SIM_TESTCASE_DIR)/*$(name)*.c $(TESTSPACE_DIR)/test.c
+	@cp $(SIM_TESTCASE_DIR)/*$(name)*.data $(TESTSPACE_DIR)/test.data
+	@cp $(SIM_TESTCASE_DIR)/*$(name)*.dump $(TESTSPACE_DIR)/test.dump
+	@cp $(SIM_TESTCASE_DIR)/*$(name)*.ans $(TESTSPACE_DIR)/test.ans
+	@find $(SIM_TESTCASE_DIR) -name '*$(name)*.in' -exec cp {} $(TESTSPACE_DIR)/test.in \;
 
-# 编译rom.s文件
-# $(PWD)/rom.o: $(PWD)/rom.s
-%.o: %.s
-	@$(AS) $(AS_FLAGS) -c $< -o $@
 
-# 清理生成文件
+build_fpga_test: testcases _no_testcase_name_check $(TESTSPACE_DIR)
+	@cp $(FPGA_TESTCASE_DIR)/*$(name)*.c $(TESTSPACE_DIR)/test.c
+	@cp $(FPGA_TESTCASE_DIR)/*$(name)*.elf $(TESTSPACE_DIR)/test.elf
+	@cp $(FPGA_TESTCASE_DIR)/*$(name)*.dump $(TESTSPACE_DIR)/test.dump
+# sometimes the input and output file not exist
+	@rm -f $(TESTSPACE_DIR)/test.in $(TESTSPACE_DIR)/test.ans
+	@find $(FPGA_TESTCASE_DIR) -name '*$(name)*.in' -exec cp {} $(TESTSPACE_DIR)/test.in \;
+	@find $(FPGA_TESTCASE_DIR) -name '*$(name)*.ans' -exec cp {} $(TESTSPACE_DIR)/test.ans \;
+
+run_sim: build_sim build_sim_test
+	cd $(TESTSPACE_DIR) && ./test
+# add your own test script here
+# Example:
+#	diff ./test/test.ans ./test/test.out
+
+
+fpga_device := /dev/ttyUSB1
+fpga_run_mode := -T # or -I
+
+# Please manually load .bit file to FPGA
+run_fpga: build_fpga_test
+	cd $(TESTSPACE_DIR) && if [ -f test.in ]; then $(PWD)/fpga/fpga test.elf test.in $(fpga_device) $(fpga_run_mode); else $(PWD)/fpga/fpga test.elf $(fpga_device) $(fpga_run_mode); fi
+
 clean:
-	rm -f $(PWD)/rom.o $(DATAFILES) $(DUMPFILES) $(PWD)/*/*.elf $(PWD)/*/*.o
+	rm -f $(TESTSPACE_DIR)/test*
 
-# 声明伪目标
-.PHONY: all clean
+.PHONY: all build_sim build_sim_test run_sim clean
