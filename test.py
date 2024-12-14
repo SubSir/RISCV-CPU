@@ -133,6 +133,7 @@ def run_fpga():
 
     command = command.replace("\\", "/")
     command = command.replace("D:/", "/mnt/d/")
+    print("command = ", command)
     run_command_OUT(command, cwd=TESTSPACE_DIR)
 
 
@@ -193,26 +194,26 @@ def load():
 
 
 testlist = [
-    # "array_test1",
-    # "array_test2",
-    # "expr",
-    # "gcd",
-    # # "heart",
-    # "lvalue",
-    # "magic",
-    # "multiarray",
-    # "pi",
-    # "qsort",
-    # "queens",
-    # "superloop",
-    # # "testsleep",
+    "array_test1",
+    "array_test2",
+    "expr",
+    "gcd",
+    # "heart",
+    "lvalue",
+    "magic",
+    "multiarray",
+    "pi",
+    "qsort",
+    "queens",
+    "superloop",
+    # "testsleep",
     "basicopt",
     "bulgarian",
     "manyarguments",
-    "statement_test",
-    "uartboom",
     "tak",
     "hanoi",
+    "statement_test",
+    # "uartboom",
 ]
 
 
@@ -232,10 +233,10 @@ def test():
 
 
 if __name__ == "__main__":
-    # main()
+    main()
 
     # gen_bit()
 
     # load()
 
-    test()
+    # test()

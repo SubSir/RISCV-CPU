@@ -186,7 +186,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                             to_if <= 1;
                             bubble <= 1;
                             mem_a <= address[head];
-                            if ((op[head] == `lsb_LB || op[head] == `lsb_LBU) && !(io_buffer_full && address[head] == 32'h30000)) begin
+                            if ((op[head] == `lsb_LB || op[head] == `lsb_LBU) && !(io_buffer_full && (address[head] == 32'h30000 || address[head] == 32'h30004))) begin
                                 // $display("0 TERM L3 tag: %d, begin lb, address: %h", tag[head], address[head]);
                                 remain <= 3'd1;
                                 mem_wr <= 0;
