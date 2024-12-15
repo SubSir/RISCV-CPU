@@ -124,10 +124,6 @@ module Lsb#(parameter LSB_SIZE = 4,
                             end
                         end
                     end
-
-                    if (from_rs && head == tail) begin
-                        // $display("WTF");
-                    end
                     
                     if (from_rob && head != tail) begin
                         for(i = 0; i < LSB_SIZE; i = i + 1)begin
@@ -186,7 +182,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                             to_if <= 1;
                             bubble <= 1;
                             mem_a <= address[head];
-                            if ((op[head] == `lsb_LB || op[head] == `lsb_LBU) && !(io_buffer_full && (address[head] == 32'h30000 || address[head] == 32'h30004))) begin
+                            if ((op[head] == `lsb_LB || op[head] == `lsb_LBU) && !(io_buffer_full && (address[head] == 32'h30000 || address[head] == 32'h30004)) && (execute[head] || address[head] != 32'h30000)) begin
                                 // $display("0 TERM L3 tag: %d, begin lb, address: %h", tag[head], address[head]);
                                 remain <= 3'd1;
                                 mem_wr <= 0;
@@ -198,7 +194,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                                 // $display("0 TERM L3 tag: %d, begin lw, address: %h", tag[head], address[head]);
                                 remain <= 3'd4;
                                 mem_wr <= 0;
-                                end else if (execute[head] && op[head] == `lsb_SB && !(io_buffer_full && address[head] == 32'h30000)) begin
+                                end else if (execute[head] && op[head] == `lsb_SB && !(io_buffer_full && (address[head] == 32'h30000 || address[head] == 32'h30004))) begin
                                 // $display("0 TERM L3 tag: %d, begin sb, address: %h, wdata: %d", tag[head], address[head], wdata[head][7:0]);
                                 remain        <= 3'd0;
                                 mem_dout <= wdata[head][7:0];

@@ -36,6 +36,7 @@ module rob#(parameter ROB_WIDTH = 4,
     reg [ROB_WIDTH-1:0] head;
     reg [ROB_WIDTH-1:0] tail;
     reg ready[ROB_SIZE-1:0];
+    reg execute[ROB_SIZE-1:0];
     reg [2:0] op[ROB_SIZE-1:0];
     reg [4:0] rd[ROB_SIZE-1:0];
     reg [31:0] wdata[ROB_SIZE-1:0];
@@ -70,7 +71,7 @@ module rob#(parameter ROB_WIDTH = 4,
                     to_reg_file       <= 0;
                     to_rs_update   <= 0;
                     if (head != tail) begin
-                        if (ready[head]) begin
+                        if (ready[head] && execute[head]) begin
                             clear              <= 0;
                             to_rs_update_order <= head;
                             to_rs_update_wdata <= wdata[head];
@@ -107,11 +108,15 @@ module rob#(parameter ROB_WIDTH = 4,
                                 end else begin
                                     // $display("0 CMIT R2 NOTHING tag: %d", head);
                             end
+                        end else if (ready[head] && op[head] == `LOAD) begin
+                            to_lsb     <= 1;
+                            to_lsb_tag <= head;
                         end
                     end
 
                     if (from_decoder) begin
                         ready[tail]    <= 0;
+                        execute[tail]    <= 0;
                         tail           <= tail +1;
                         busy_cnt_tmp = busy_cnt_tmp + 1;
                     end
@@ -125,10 +130,11 @@ module rob#(parameter ROB_WIDTH = 4,
                     end
                     
                     if (from_rs) begin
+                        ready[from_rs_tag] <= 1;
                         if (from_rs_op == `LOAD) begin
-                            ready[from_rs_tag]    <= 0;
+                            execute[from_rs_tag]    <= 0;
                         end else begin
-                            ready[from_rs_tag]    <= 1;
+                            execute[from_rs_tag]    <= 1;
                         end
                         op[from_rs_tag]       <= from_rs_op;
                         rd[from_rs_tag]       <= from_rs_rd;
@@ -137,7 +143,7 @@ module rob#(parameter ROB_WIDTH = 4,
                     end
 
                     if (from_lsb) begin
-                        ready[from_lsb_tag] <= 1;
+                        execute[from_lsb_tag] <= 1;
                         wdata[from_lsb_tag] <= from_lsb_wdata;
                     end
 

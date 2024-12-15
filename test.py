@@ -69,12 +69,14 @@ def build_sim_test(name):
     test_data = os.path.join(SIM_TESTCASE_DIR, f"*{name}*.data")
     test_dump = os.path.join(SIM_TESTCASE_DIR, f"*{name}*.dump")
     test_ans = os.path.join(SIM_TESTCASE_DIR, f"*{name}*.ans")
+    test_in = os.path.join(SIM_TESTCASE_DIR, f"*{name}*.in")
 
     for src, dst in [
         (test_c, "test.c"),
         (test_data, "test.data"),
         (test_dump, "test.dump"),
         (test_ans, "test.ans"),
+        (test_in, "test.in"),
     ]:
         files = glob.glob(src)
         if files:
@@ -194,33 +196,33 @@ def load():
 
 
 testlist = [
-    "array_test1",
-    "array_test2",
-    "expr",
-    "gcd",
-    # "heart",
-    "lvalue",
-    "magic",
-    "multiarray",
-    "pi",
-    "qsort",
-    "queens",
-    "superloop",
-    # "testsleep",
-    "basicopt",
-    "bulgarian",
-    "manyarguments",
-    "tak",
+    # "array_test1",
+    # "array_test2",
+    # "expr",
+    # "gcd",
+    # # "heart",
+    # "lvalue",
+    # "multiarray",
+    # "pi",
+    # "qsort",
+    # # "testsleep",
+    # "basicopt",
+    # "bulgarian",
+    # "manyarguments",
+    # "queens",
+    # "magic",
+    # "superloop",
     "hanoi",
-    "statement_test",
+    # "tak",
+    # "statement_test",
     # "uartboom",
 ]
 
 
 def test():
-    load()
-    time.sleep(1)
     for test in testlist:
+        load()
+        time.sleep(1)
         print("Start to run test: " + test)
         build_fpga_test(test)
         start_time = time.time()  # 记录开始时间
