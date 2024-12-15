@@ -135,8 +135,27 @@ def run_fpga():
 
     command = command.replace("\\", "/")
     command = command.replace("D:/", "/mnt/d/")
-    print("command = ", command)
     run_command_OUT(command, cwd=TESTSPACE_DIR)
+
+
+def print_fpga_cmd():
+    fpga_device = "/dev/ttyUSB1"
+    fpga_run_mode = "-T"  # or '-I'
+
+    test_in = os.path.join(TESTSPACE_DIR, "test.in")
+    test_data = os.path.join(TESTSPACE_DIR, "test.data")
+    fpga_script = os.path.join(PWD, "fpga", "fpga.elf")
+
+    if os.path.exists(test_in):
+        command = (
+            f"wsl {fpga_script} {test_data} {test_in} {fpga_device} {fpga_run_mode}"
+        )
+    else:
+        command = f"wsl {fpga_script} {test_data} {fpga_device} {fpga_run_mode}"
+
+    command = command.replace("\\", "/")
+    command = command.replace("D:/", "/mnt/d/")
+    print("command = ", command)
 
 
 def clean():
@@ -196,31 +215,49 @@ def load():
 
 
 testlist = [
-    # "array_test1",
-    # "array_test2",
-    # "expr",
-    # "gcd",
-    # # "heart",
-    # "lvalue",
-    # "multiarray",
-    # "pi",
-    # "qsort",
-    # # "testsleep",
-    # "basicopt",
-    # "bulgarian",
-    # "manyarguments",
-    # "queens",
-    # "magic",
-    # "superloop",
+    "array_test1",
+    "array_test2",
+    "expr",
+    "gcd",
+    "lvalue",
+    "multiarray",
+    "pi",
+    "qsort",
+    # "testsleep",
+    "basicopt",
+    "bulgarian",
+    "manyarguments",
     "hanoi",
-    # "tak",
-    # "statement_test",
-    # "uartboom",
+    "tak",
+    "uartboom",
+    # "heart"
+]
+
+testlist2 = [
+    "queens",
+    "magic",
+    "superloop",
+    "statement_test",
 ]
 
 
-def test():
+def test1():
+    load()
+    time.sleep(1)
     for test in testlist:
+        print("Start to run test: " + test)
+        build_fpga_test(test)
+        start_time = time.time()  # 记录开始时间
+        run_fpga()
+        end_time = time.time()  # 记录结束时间
+        check()
+
+        elapsed_time = end_time - start_time  # 计算运行时间
+        print(f"运行时间: {elapsed_time:.2f} 秒")
+
+
+def test2():
+    for test in testlist2:
         load()
         time.sleep(1)
         print("Start to run test: " + test)
@@ -235,10 +272,15 @@ def test():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
 
     # gen_bit()
 
     # load()
 
-    # test()
+    test1()
+
+    test2()
+
+    build_fpga_test("heart")
+    print_fpga_cmd()

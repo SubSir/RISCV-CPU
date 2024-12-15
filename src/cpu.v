@@ -37,8 +37,8 @@ module cpu(
   parameter ROB_WIDTH = 4;
   parameter RS_WIDTH = 4;
   parameter RS_SIZE = 16;
-  parameter LSB_SIZE = 8;
-  parameter LSB_WIDTH = 3;
+  parameter LSB_SIZE = 4;
+  parameter LSB_WIDTH = 2;
 
   reg mem_wr_reg;
   reg [31:0] mem_a_reg;

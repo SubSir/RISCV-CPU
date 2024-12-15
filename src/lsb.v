@@ -50,6 +50,7 @@ module Lsb#(parameter LSB_SIZE = 4,
     reg next;
     reg valid;
     reg bubble;
+    reg [1:0] lazy;
     reg break;
     reg [LSB_WIDTH:0] busy_cnt;
     reg [LSB_WIDTH:0] busy_cnt_tmp;
@@ -57,12 +58,11 @@ module Lsb#(parameter LSB_SIZE = 4,
         if (rst_in) begin
             to_if_bsy <= 1;
             to_rob     <= 0;
-            if (rst_in) begin
-                to_if <= 0;
-                head <= 0;
-                tail <= 0;
-                busy_cnt <= 0;
-            end 
+            to_if <= 0;
+            head <= 0;
+            tail <= 0;
+            busy_cnt <= 0;
+            lazy <= 0;
         end else begin
             if (rdy_in) begin
                 if (clear) begin
@@ -149,6 +149,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                             head <= head + 1;
                             busy_cnt_tmp = busy_cnt_tmp - 1;
                             to_rob_tag <= tag[head];
+                            lazy <= 2'b11;
                             if (op[head] == `lsb_LB) begin
                                 // $display("0 TERM L3 LB tag: %d, data: %d", tag[head], {{24{mem_din[7]}}, mem_din});
                                 to_rob <= 1;
@@ -175,7 +176,7 @@ module Lsb#(parameter LSB_SIZE = 4,
                         end
                     end
                     
-                    if (!to_if) begin
+                    if (!to_if && lazy == 2'b00) begin
                         if (head == tail || !ready[head]) begin
                             to_if <= 0;
                             end else begin
@@ -218,6 +219,10 @@ module Lsb#(parameter LSB_SIZE = 4,
                                 bubble <= 0;
                             end
                         end
+                    end
+
+                    if (lazy > 2'b00) begin
+                        lazy <= lazy - 2'b01;
                     end
 
                     to_if_bsy <= (busy_cnt_tmp + 3 < LSB_SIZE);
